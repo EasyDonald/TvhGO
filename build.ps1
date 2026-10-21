@@ -64,7 +64,7 @@ if (-not (Test-Path $ks)) {
         -dname 'CN=TVH Client, OU=DSH, O=DSH, L=Local, C=CN'
     if ($LASTEXITCODE -ne 0) { throw 'keytool failed' }
 }
-$apk = Join-Path $root 'TvhGO-1.4.1.apk'
+$apk = Join-Path $root 'TvhGO-1.4.2.apk'
 & (Join-Path $bt 'apksigner.bat') sign --ks $ks --ks-pass pass:android --key-pass pass:android `
     --out $apk (Join-Path $build 'app-aligned.apk')
 if ($LASTEXITCODE -ne 0) { throw 'apksigner failed' }

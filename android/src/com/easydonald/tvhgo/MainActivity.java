@@ -946,6 +946,7 @@ public class MainActivity extends Activity {
             items.add(tr("重新录制"));
             items.add(tr("删除录制"));
         } else {
+            items.add(tr("编辑"));
             items.add(tr("取消录制"));
             items.add(tr("停止录制"));
             items.add(tr("删除条目"));
@@ -969,14 +970,130 @@ public class MainActivity extends Activity {
                         } else if (tab == 3) {
                             dvrAction(3, d.uuid);
                         } else if (which == 0) {
-                            dvrAction(1, d.uuid);
+                            editEntry(d);
                         } else if (which == 1) {
+                            dvrAction(1, d.uuid);
+                        } else if (which == 2) {
                             dvrAction(2, d.uuid);
                         } else {
                             dvrAction(3, d.uuid);
                         }
                     }
                 }).show();
+    }
+
+    /** 编辑待录制/录制中任务（标题、起止时间、提前/延后、启用） */
+    private void editEntry(final DvrEntry d) {
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(16), dp(8), dp(16), dp(8));
+
+        final EditText title = field();
+        title.setText(d.title);
+        box.addView(text(tr("标题"), 12, DIM, false));
+        box.addView(title);
+
+        final SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.CHINA);
+        final long[] startMs = {d.start * 1000L};
+        final long[] stopMs = {d.stop * 1000L};
+
+        final TextView startTv = text(f.format(new Date(startMs[0])), 16, ACCENT, true);
+        startTv.setPadding(dp(4), dp(10), 0, dp(10));
+        box.addView(text(tr("开始时间"), 12, DIM, false));
+        box.addView(startTv);
+        startTv.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                pickDateTime(startMs[0], new OnTime() {
+                    public void onTime(long ms) {
+                        startMs[0] = ms;
+                        if (stopMs[0] <= ms) stopMs[0] = ms + 1800_000L;
+                        startTv.setText(f.format(new Date(startMs[0])));
+                        startTv.setTag(null);
+                    }
+                });
+            }
+        });
+
+        final TextView stopTv = text(f.format(new Date(stopMs[0])), 16, ACCENT, true);
+        stopTv.setPadding(dp(4), dp(10), 0, dp(10));
+        box.addView(text(tr("结束时间"), 12, DIM, false));
+        box.addView(stopTv);
+        stopTv.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                pickDateTime(stopMs[0], new OnTime() {
+                    public void onTime(long ms) {
+                        if (ms <= startMs[0]) {
+                            toast(tr("结束时间必须晚于开始时间"));
+                            return;
+                        }
+                        stopMs[0] = ms;
+                        stopTv.setText(f.format(new Date(stopMs[0])));
+                    }
+                });
+            }
+        });
+
+        final EditText preExtra = field();
+        preExtra.setText(String.valueOf(d.startExtra / 60));
+        preExtra.setInputType(InputType.TYPE_CLASS_NUMBER);
+        box.addView(text(tr("提前开始（分钟）"), 12, DIM, false));
+        box.addView(preExtra);
+
+        final EditText postExtra = field();
+        postExtra.setText(String.valueOf(d.stopExtra / 60));
+        postExtra.setInputType(InputType.TYPE_CLASS_NUMBER);
+        box.addView(text(tr("延后结束（分钟）"), 12, DIM, false));
+        box.addView(postExtra);
+
+        final CheckBox enabled = new CheckBox(this);
+        enabled.setText(tr("启用该任务"));
+        enabled.setTextColor(TEXT);
+        enabled.setChecked(d.enabled);
+        box.addView(enabled);
+
+        ScrollView sv = new ScrollView(this);
+        sv.addView(box);
+        dlg().setTitle(tr("编辑录制"))
+                .setView(sv)
+                .setPositiveButton(tr("保存"), new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dd, int w) {
+                        int pre = 0, post = 0;
+                        try { pre = Integer.parseInt(preExtra.getText().toString().trim()); } catch (Exception ignored) {}
+                        try { post = Integer.parseInt(postExtra.getText().toString().trim()); } catch (Exception ignored) {}
+                        if (stopMs[0] <= startMs[0]) {
+                            toast(tr("结束时间必须晚于开始时间"));
+                            return;
+                        }
+                        final long st = startMs[0] / 1000, en = stopMs[0] / 1000;
+                        final String t = title.getText().toString().trim();
+                        final int fpre = pre * 60, fpost = post * 60;
+                        final boolean fen = enabled.isChecked();
+                        progress.setVisibility(View.VISIBLE);
+                        bg.execute(new Runnable() {
+                            public void run() {
+                                try {
+                                    api.updateEntry(d.uuid, t, st, en, fpre, fpost, fen);
+                                    ui.post(new Runnable() {
+                                        public void run() {
+                                            progress.setVisibility(View.GONE);
+                                            toast(tr("已保存"));
+                                            loadDvr();
+                                        }
+                                    });
+                                } catch (final Exception e) {
+                                    ui.post(new Runnable() {
+                                        public void run() {
+                                            progress.setVisibility(View.GONE);
+                                            toast(tr("保存失败：") + e.getMessage());
+                                        }
+                                    });
+                                }
+                            }
+                        });
+                    }
+                })
+                .setNegativeButton(tr("取消"), null)
+                .show();
     }
 
     private void rerecordEntry(final DvrEntry d) {
@@ -1633,6 +1750,7 @@ public class MainActivity extends Activity {
                 .setSingleChoiceItems(labels.toArray(new String[0]), sel, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface d, int which) {
                         prefs.profile = streamProfiles.get(which)[0];
+                        prefs.profileChosen = true;
                         prefs.save(MainActivity.this);
                         api = TvhApi.from(prefs);
                         d.dismiss();
@@ -1895,6 +2013,17 @@ public class MainActivity extends Activity {
                     try {
                         streamProfiles = api.profiles();
                     } catch (Exception ignored) {
+                    }
+                    if (!prefs.profileChosen) {
+                        try {
+                            String dp = api.dvrConfigProfileName();
+                            if (dp != null && !dp.isEmpty() && !dp.equals(prefs.profile)) {
+                                prefs.profile = dp;
+                                prefs.save(MainActivity.this);
+                                api = TvhApi.from(prefs);
+                            }
+                        } catch (Exception ignored) {
+                        }
                     }
                     boolean hasProf = false;
                     if (streamProfiles != null) {
@@ -2458,14 +2587,13 @@ public class MainActivity extends Activity {
             meta.append(d.channelName);
             if (d.finished) {
                 if (d.filesize > 0) meta.append("  ·  ").append(fmtSize(d.filesize));
-                if (d.playcount > 0) meta.append("  ·  ").append(tr("播放")).append(" ").append(d.playcount);
                 if (d.errors > 0) meta.append("  ·  ").append(tr("错误")).append(" ").append(d.errors);
             } else {
                 String st = d.schedStatus.isEmpty() ? d.status : d.schedStatus;
                 if (st != null && !st.isEmpty()) meta.append("  ·  ").append(st);
                 if (d.autorec != null && !d.autorec.isEmpty()) meta.append("  ·  ").append(tr("自动录制"));
             }
-            row.addView(text(meta.toString(), 11, d.errors > 0 ? WARN : DIM, false));
+            row.addView(text(meta.toString(), 11, DIM, false));
             return row;
         }
     }

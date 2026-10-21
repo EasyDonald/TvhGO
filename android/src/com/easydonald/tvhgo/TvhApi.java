@@ -591,25 +591,12 @@ public class TvhApi {
         List<String[]> out = new ArrayList<String[]>();
         JSONArray arr = requestJson("/api/dvr/config/grid?start=0&limit=50", "GET", null).optJSONArray("entries");
         if (arr == null) return out;
-        List<String[]> profs = new ArrayList<String[]>();
-        try {
-            profs = profiles();
-        } catch (Exception ignored) {
-        }
         for (int i = 0; i < arr.length(); i++) {
             try {
                 JSONObject o = arr.getJSONObject(i);
                 String uuid = o.optString("uuid");
                 String name = o.optString("name");
                 if (name == null || name.trim().isEmpty()) name = "默认配置";
-                String puuid = o.optString("profile");
-                String pname = "";
-                if (puuid != null && !puuid.isEmpty()) {
-                    for (String[] p : profs) {
-                        if (p[1].equals(puuid)) { pname = p[0]; break; }
-                    }
-                }
-                if (!pname.isEmpty()) name = name + "（" + pname + "）";
                 out.add(new String[]{uuid, name});
             } catch (org.json.JSONException ignored) {
             }

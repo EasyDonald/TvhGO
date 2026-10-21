@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.1
+- DVR profile picker shows the **DVR profile name only** (DVR profiles are not stream profiles — the stream profile annotation was wrong and has been removed)
+- Reverted the “default stream profile follows the DVR profile” behaviour; the default stream profile is pass again unless you pick one
+- “About” now reads the real version from the APK instead of a hardcoded string
+
 ## 1.4
 - Upcoming / recording entries can be **edited**: title, start, stop, pre/post minutes, enabled (/api/idnode/save)
 - DVR row subtitle is no longer highlighted red when a file has errors

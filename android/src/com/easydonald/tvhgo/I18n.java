@@ -133,6 +133,17 @@ public class I18n {
                 "No recording config on server; create one in the web UI DVR", "録画設定がありません。Web UI で作成してください");
         add("没有可用的播放器，请先安装 VLC", "沒有可用的播放器，請先安裝 VLC", "No player found; install VLC", "プレーヤーがありません。VLC を導入してください");
         add("未找到 VLC，改用系统选择器", "找不到 VLC，改用系統選擇", "VLC not found; using system chooser", "VLC が見つかりません");
+        add("未找到该播放器，改用系统选择器", "找不到該播放器，改用系統選擇", "Player not found; using system chooser", "プレーヤーが見つかりません");
+        add("播放器", "播放器", "Player", "プレーヤー");
+        add("系统选择器", "系統選擇器", "System chooser", "システム選択");
+        add("管理播放器", "管理播放器", "Manage players", "プレーヤー管理");
+        add("外部播放器", "外部播放器", "Players", "外部プレーヤー");
+        add("添加播放器", "新增播放器", "Add player", "プレーヤーを追加");
+        add("编辑播放器", "編輯播放器", "Edit player", "プレーヤーを編集");
+        add("包名", "套件名稱", "Package", "パッケージ名");
+        add("包名不能为空", "套件名稱不能為空", "Package cannot be empty", "パッケージ名は必須です");
+        add("至少保留一个播放器", "至少保留一個播放器", "Keep at least one player", "最低1つ必要です");
+        add("个", "個", "", "件");
         add("已复制", "已複製", "Copied", "コピーしました");
         add("该频道已禁用，先启用再播放", "該頻道已停用，請先啟用再播放", "Channel disabled", "チャンネルは無効です");
         add("播放（默认方式）", "播放（預設方式）", "Play (default)", "再生（既定）");

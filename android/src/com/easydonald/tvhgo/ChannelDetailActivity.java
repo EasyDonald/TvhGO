@@ -374,8 +374,8 @@ public class ChannelDetailActivity extends Activity {
         Intent i = new Intent(Intent.ACTION_VIEW);
         i.setDataAndType(Uri.parse(url), "video/*");
         i.putExtra("title", channelName);
-        if (prefs.preferVlc) {
-            i.setPackage(prefs.vlcPackage);
+        if (prefs.playerPkg != null && !prefs.playerPkg.isEmpty()) {
+            i.setPackage(prefs.playerPkg);
             try {
                 startActivity(i);
                 return;

@@ -44,6 +44,7 @@ import android.widget.Toast;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -860,7 +861,13 @@ public class MainActivity extends Activity {
         dvrAdapter = new DvrAdapter();
         dvrList.setAdapter(dvrAdapter);
         dvrList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            public void onItemClick(AdapterView<?> p, View view, int pos, long id) { dvrMenu(dvrItems.get(pos)); }
+            public void onItemClick(AdapterView<?> p, View view, int pos, long id) {
+                if (dvrTab >= 4) {
+                    if (pos >= 0 && pos < recItems.size()) autoRecMenu(recItems.get(pos));
+                } else if (pos >= 0 && pos < dvrItems.size()) {
+                    dvrMenu(dvrItems.get(pos));
+                }
+            }
         });
         v.addView(dvrList, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
         return v;
@@ -893,6 +900,30 @@ public class MainActivity extends Activity {
                         public void run() {
                             progress.setVisibility(View.GONE);
                             dvrLoaded = true;
+                            final long nowSec = System.currentTimeMillis() / 1000L;
+                            if (tab == 0) {
+                                Collections.sort(list, new Comparator<DvrEntry>() {
+                                    public int compare(DvrEntry a, DvrEntry b) {
+                                        boolean ra = a.start <= nowSec;
+                                        boolean rb = b.start <= nowSec;
+                                        if (ra != rb) return ra ? -1 : 1;   // 正在录制的排最前
+                                        return Long.compare(a.start, b.start);
+                                    }
+                                });
+                            } else {
+                                Collections.sort(list, new Comparator<DvrEntry>() {
+                                    public int compare(DvrEntry a, DvrEntry b) {
+                                        return Long.compare(b.start, a.start);   // 新的在前
+                                    }
+                                });
+                            }
+                            Collections.sort(rules, new Comparator<AutoRec>() {
+                                public int compare(AutoRec a, AutoRec b) {
+                                    String na = a.name.isEmpty() ? a.title : a.name;
+                                    String nb = b.name.isEmpty() ? b.title : b.name;
+                                    return na.compareToIgnoreCase(nb);
+                                }
+                            });
                             dvrItems.clear();
                             dvrItems.addAll(list);
                             recItems.clear();

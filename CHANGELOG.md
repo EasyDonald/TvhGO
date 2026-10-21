@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.2
+- **Fix crash** when tapping an Autorec / Timerec row: the list click handler always read the recording-entries list, so index lookups went out of bounds
+- Upcoming list is sorted by start time ascending with the **running recording pinned first**; finished / failed / removed are sorted newest-first; rules by name
+
 ## 1.4.1
 - DVR profile picker shows the **DVR profile name only** (DVR profiles are not stream profiles — the stream profile annotation was wrong and has been removed)
 - Reverted the “default stream profile follows the DVR profile” behaviour; the default stream profile is pass again unless you pick one

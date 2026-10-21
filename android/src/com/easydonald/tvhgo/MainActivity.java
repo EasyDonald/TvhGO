@@ -231,7 +231,7 @@ public class MainActivity extends Activity {
         titleCol.setOrientation(LinearLayout.VERTICAL);
         titleView = text("TvhGO", 21, TEXT, true);
         titleCol.addView(titleView);
-        subtitleView = text(tr("正在连接 ") + prefs.base(), 10, DIM, false);
+        subtitleView = text(tr("正在连接…"), 10, DIM, false);
         subtitleView.setPadding(0, dp(2), 0, 0);
         titleCol.addView(subtitleView);
         header.addView(titleCol, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
@@ -305,7 +305,7 @@ public class MainActivity extends Activity {
         if (titleView != null) titleView.setText("TvhGO");
         if (subtitleView != null) {
             String n = prefs.cur().name;
-            subtitleView.setText((n == null || n.isEmpty() ? tr("默认") : n) + "  ·  " + prefs.base());
+            subtitleView.setText(n == null || n.isEmpty() ? "Tvheadend" : n);
         }
     }
 
@@ -515,7 +515,6 @@ public class MainActivity extends Activity {
         statusContent.removeAllViews();
         statusContent.addView(section(tr("服务器")));
         statusContent.addView(kv(tr("名称"), info.isEmpty() ? "Tvheadend" : info));
-        statusContent.addView(kv(tr("地址"), prefs.base()));
         statusContent.addView(kv(tr("频道 / 分组"), chCount + tr(" 个 / ") + tagCount + tr(" 个")));
         statusContent.addView(kv(tr("事件连接"), conns + tr(" 条")));
 
@@ -1567,7 +1566,7 @@ public class MainActivity extends Activity {
 
         settingsContent.addView(groupTitle(tr("其它")));
         LinearLayout g5 = cardGroup();
-        addGroupRow(g5, tr("打开 Tvheadend 网页后台"), prefs.base(), new View.OnClickListener() {
+        addGroupRow(g5, tr("打开 Tvheadend 网页后台"), "", new View.OnClickListener() {
             public void onClick(View v) { openWebUi(); }
         });
         addGroupRow(g5, tr("关于"), "TvhGO 1.2.1 · com.easydonald.tvhgo", null);
@@ -1588,7 +1587,7 @@ public class MainActivity extends Activity {
         List<String> labels = new ArrayList<String>();
         for (int i = 0; i < prefs.profiles.size(); i++) {
             ServerProfile sp = prefs.profiles.get(i);
-            labels.add((i == prefs.current ? "● " : "○ ") + sp.name + "\n    " + sp.hostLabel());
+            labels.add((i == prefs.current ? "● " : "○ ") + sp.name);
         }
         dlg()
                 .setTitle(tr("切换服务器"))
@@ -1772,7 +1771,7 @@ public class MainActivity extends Activity {
     private void loadChannels() {
         ImageLoader.get().configure(api.base, prefs.user, prefs.pass);
         progress.setVisibility(View.VISIBLE);
-        statusLine.setText(tr("正在连接 ") + prefs.base() + " …");
+        statusLine.setText(tr("正在连接…"));
         bg.execute(new Runnable() {
             public void run() {
                 try {
@@ -1886,7 +1885,7 @@ public class MainActivity extends Activity {
         }
         if (channelAdapter != null) channelAdapter.notifyDataSetChanged();
         if (statusLine != null) {
-            statusLine.setText((serverInfo.isEmpty() ? prefs.base() : serverInfo) + tr(" · 共 ") + all.size()
+            statusLine.setText((serverInfo.isEmpty() ? "Tvheadend" : serverInfo) + tr(" · 共 ") + all.size()
                     + tr(" 个频道 · 显示 ") + shown.size());
         }
     }

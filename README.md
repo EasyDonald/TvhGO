@@ -1,5 +1,7 @@
 # TvhGO
 
+<p align="center"><img src="docs/icon.png" width="120" alt="TvhGO icon"></p>
+
 **A lightweight Android client for [Tvheadend](https://tvheadend.org/) — channels, EPG, DVR and server status, in one small APK.**
 
 No AndroidX, no ExoPlayer, no libVLC, no third-party runtime libraries — just the Android framework. The whole app is ~100 KB.
@@ -9,6 +11,9 @@ No AndroidX, no ExoPlayer, no libVLC, no third-party runtime libraries — just 
 [![APK size](https://img.shields.io/badge/APK-~100%20KB-blue.svg)](https://github.com/easydonald/TvhGO/releases)
 
 > 中文说明见下方 [中文](#中文)
+
+> Screenshots: the maintainer will add device screenshots here. docs/icon.png is the launcher icon.
+
 
 ---
 

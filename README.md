@@ -22,7 +22,7 @@ No AndroidX, no ExoPlayer, no libVLC, no third-party runtime libraries — just 
 - Tap a channel → **channel detail page**: EPG per day (today / tomorrow / MM-dd, up to **7 days**), record a programme, play, copy stream URL, per-channel stream profile
 
 ### Playback
-- Opens with VLC (or any player via the system chooser)
+- Opens with the player you pick — the list is fully user-editable (**name + package**, add / edit / delete, switch), VLC is preloaded; “System chooser” is always available
 - Stream URL = `http://user:pass@host:9981/stream/channel/<uuid>?profile=<name>`
 - Stream profile can be chosen per server (default) and overridden per channel
 
@@ -33,6 +33,7 @@ No AndroidX, no ExoPlayer, no libVLC, no third-party runtime libraries — just 
 Mirrors the Tvheadend web UI's DVR tabs:
 - **Upcoming / Finished / Failed / Removed / Autorec / Timerec**
 - Upcoming: cancel / stop / delete
+- All DVR lists are **paged** (400 per request, follows 	otal) — no 200-item cap
 - Finished: play / **download to phone** (system DownloadManager with Basic auth header) / delete, header shows total size
 - Failed & Removed: **re-record** (`api/dvr/entry/rerecord/toggle`)
 - Autorec & Timerec: list rules, enable/disable, delete, details

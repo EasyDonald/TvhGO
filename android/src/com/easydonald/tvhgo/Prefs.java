@@ -25,6 +25,24 @@ public class Prefs {
     // 播放器设置（全局，与服务器无关）
     public String vlcPackage = "org.videolan.vlc";
     public boolean preferVlc = true;
+
+    /** 外部播放器 */
+    public static class Player {
+        public String name = "";
+        public String pkg = "";
+
+        public Player() {}
+
+        public Player(String name, String pkg) {
+            this.name = name;
+            this.pkg = pkg;
+        }
+    }
+
+    /** 播放器列表（默认内置一个 VLC） */
+    public final java.util.List<Player> players = new java.util.ArrayList<Player>();
+    /** 当前使用的播放器包名；空字符串 = 每次弹系统选择器 */
+    public String playerPkg = "org.videolan.vlc";
     /** 频道列表左侧显示：false=频道号，true=频道图标 */
     public boolean showIcons = false;
     /** 频道副标题：0=分组，1=当前播出节目 */
@@ -71,6 +89,30 @@ public class Prefs {
         if (p.current < 0 || p.current >= p.profiles.size()) p.current = 0;
 
         p.vlcPackage = sp.getString("vlc", p.vlcPackage);
+        String playersJson = sp.getString("players", "");
+        if (playersJson != null && !playersJson.isEmpty()) {
+            try {
+                org.json.JSONArray arr = new org.json.JSONArray(playersJson);
+                for (int i = 0; i < arr.length(); i++) {
+                    org.json.JSONObject o = arr.getJSONObject(i);
+                    String nm = o.optString("name");
+                    String pk = o.optString("pkg");
+                    if (!pk.isEmpty()) p.players.add(new Player(nm.isEmpty() ? pk : nm, pk));
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        if (p.players.isEmpty()) {
+            p.players.add(new Player("VLC", p.vlcPackage == null || p.vlcPackage.isEmpty()
+                    ? "org.videolan.vlc" : p.vlcPackage));
+        }
+        if (sp.contains("player_pkg")) {
+            p.playerPkg = sp.getString("player_pkg", p.players.get(0).pkg);
+        } else if (sp.contains("prefer_vlc") && !sp.getBoolean("prefer_vlc", true)) {
+            p.playerPkg = "";
+        } else {
+            p.playerPkg = p.players.get(0).pkg;
+        }
         p.preferVlc = sp.getBoolean("prefer_vlc", true);
         p.showIcons = sp.getBoolean("show_icons", false);
         p.subtitleMode = sp.getInt("subtitle_mode", 1);
@@ -126,6 +168,8 @@ public class Prefs {
                 .putString("pass", pass)
                 .putString("profile", profile)
                 .putString("vlc", vlcPackage)
+                .putString("players", playersJson())
+                .putString("player_pkg", playerPkg)
                 .putBoolean("prefer_vlc", preferVlc)
                 .putBoolean("show_icons", showIcons)
                 .putInt("subtitle_mode", subtitleMode)
@@ -163,6 +207,29 @@ public class Prefs {
         syncToProfile();
         current = idx;
         syncFromProfile();
+    }
+
+    private String playersJson() {
+        org.json.JSONArray arr = new org.json.JSONArray();
+        for (Player pl : players) {
+            try {
+                org.json.JSONObject o = new org.json.JSONObject();
+                o.put("name", pl.name);
+                o.put("pkg", pl.pkg);
+                arr.put(o);
+            } catch (Exception ignored) {
+            }
+        }
+        return arr.toString();
+    }
+
+    /** 当前播放器显示名 */
+    public String playerName() {
+        if (playerPkg == null || playerPkg.isEmpty()) return null;
+        for (Player p : players) {
+            if (p.pkg.equals(playerPkg)) return p.name;
+        }
+        return playerPkg;
     }
 
     /** 某频道实际使用的 profile（频道单独设置优先，否则用默认） */

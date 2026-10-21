@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4
+- Upcoming / recording entries can be **edited**: title, start, stop, pre/post minutes, enabled (/api/idnode/save)
+- DVR row subtitle is no longer highlighted red when a file has errors
+- Removed the play-count from DVR rows
+- **DVR config presets fixed**: config names are resolved from the server and annotated with the stream profile they use (e.g. “默认配置（pass-norewrite）”); on first run the default stream profile follows the default DVR config’s profile instead of a hardcoded pass
+
 ## 1.3.4
 - **DVR lists are paged**: upcoming / finished / failed / removed / autorec / timerec now request 400 per page and keep going until 	otal, fixing the 200-item cap reported for Finished
 - **Multiple external players**: add your own players with a display name + package name, edit, delete, and switch between them (VLC is preloaded, “System chooser” always available)

@@ -21,6 +21,8 @@ public class Prefs {
     public String user = "admin";
     public String pass = "";
     public String profile = "pass";
+    /** 用户是否手动选过默认串流配置（没选过就跟随录制配置的 profile） */
+    public boolean profileChosen = false;
 
     // 播放器设置（全局，与服务器无关）
     public String vlcPackage = "org.videolan.vlc";
@@ -118,6 +120,7 @@ public class Prefs {
         p.subtitleMode = sp.getInt("subtitle_mode", 1);
         p.lang = sp.getInt("lang", 0);
         p.themeMode = sp.getInt("theme_mode", 0);
+        p.profileChosen = sp.getBoolean("profile_chosen", false);
 
         String cp = sp.getString("channel_profiles", "");
         if (cp != null && !cp.isEmpty()) {
@@ -167,6 +170,7 @@ public class Prefs {
                 .putString("user", user)
                 .putString("pass", pass)
                 .putString("profile", profile)
+                .putBoolean("profile_chosen", profileChosen)
                 .putString("vlc", vlcPackage)
                 .putString("players", playersJson())
                 .putString("player_pkg", playerPkg)

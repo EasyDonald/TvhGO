@@ -1683,7 +1683,12 @@ public class MainActivity extends Activity {
         addGroupRow(g5, tr("打开 Tvheadend 网页后台"), "", new View.OnClickListener() {
             public void onClick(View v) { openWebUi(); }
         });
-        addGroupRow(g5, tr("关于"), "TvhGO 1.2.1 · com.easydonald.tvhgo", null);
+        String verName = "";
+        try {
+            verName = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (Exception ignored) {
+        }
+        addGroupRow(g5, tr("关于"), "TvhGO " + (verName == null ? "" : verName) + " · " + getPackageName(), null);
         settingsContent.addView(pad(g5));
     }
 
@@ -2013,17 +2018,6 @@ public class MainActivity extends Activity {
                     try {
                         streamProfiles = api.profiles();
                     } catch (Exception ignored) {
-                    }
-                    if (!prefs.profileChosen) {
-                        try {
-                            String dp = api.dvrConfigProfileName();
-                            if (dp != null && !dp.isEmpty() && !dp.equals(prefs.profile)) {
-                                prefs.profile = dp;
-                                prefs.save(MainActivity.this);
-                                api = TvhApi.from(prefs);
-                            }
-                        } catch (Exception ignored) {
-                        }
                     }
                     boolean hasProf = false;
                     if (streamProfiles != null) {

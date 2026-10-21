@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.4
+- **DVR lists are paged**: upcoming / finished / failed / removed / autorec / timerec now request 400 per page and keep going until 	otal, fixing the 200-item cap reported for Finished
+- **Multiple external players**: add your own players with a display name + package name, edit, delete, and switch between them (VLC is preloaded, “System chooser” always available)
+
 ## 1.3.3
 - Server address is no longer displayed anywhere in the UI (header, channel page status line, status page, settings rows, profile switcher) — only the profile name is shown, so screenshots don't leak the domain
 - The URL is still editable in the server edit dialog and still used by “Open Tvheadend web UI”

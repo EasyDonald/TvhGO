@@ -56,6 +56,11 @@ class DvrEntry {
     int playcount;
     boolean finished;
     String autorec = "";
+    int pri;
+    int startExtra;
+    int stopExtra;
+    boolean enabled = true;
+    String state = "";
 }
 
 /** 自动录制 / 定时录制规则 */

@@ -437,6 +437,11 @@ public class TvhApi {
                 d.errors = o.optInt("errors", 0);
                 d.playcount = o.optInt("playcount", 0);
                 d.autorec = o.optString("autorec_caption", "");
+                d.pri = o.optInt("pri", 0);
+                d.startExtra = o.optInt("start_extra", 0);
+                d.stopExtra = o.optInt("stop_extra", 0);
+                d.enabled = o.optBoolean("enabled", true);
+                d.state = o.optString("state", "");
                 out.add(d);
             }
             start += arr.length();
@@ -457,6 +462,39 @@ public class TvhApi {
         List<DvrEntry> list = dvrGrid("/api/dvr/entry/grid_removed");
         for (DvrEntry d : list) d.finished = false;
         return list;
+    }
+
+    /** 编辑待录制/录制中的任务 */
+    public void updateEntry(String uuid, String title, long start, long stop,
+                            int startExtra, int stopExtra, boolean enabled) throws IOException {
+        org.json.JSONObject node = new org.json.JSONObject();
+        try {
+            node.put("uuid", uuid);
+            node.put("disp_title", title);
+            node.put("start", start);
+            node.put("stop", stop);
+            node.put("start_extra", startExtra);
+            node.put("stop_extra", stopExtra);
+            node.put("enabled", enabled);
+        } catch (org.json.JSONException e) {
+            throw new IOException(e.getMessage());
+        }
+        postForm("/api/idnode/save", "node=" + enc(node.toString()));
+    }
+
+    /** 默认录制配置用的串流 profile 名称（读不到返回空串） */
+    public String dvrConfigProfileName() throws IOException {
+        JSONArray arr = requestJson("/api/dvr/config/grid?start=0&limit=1", "GET", null).optJSONArray("entries");
+        if (arr == null || arr.length() == 0) return "";
+        try {
+            String puuid = arr.getJSONObject(0).optString("profile");
+            if (puuid == null || puuid.isEmpty()) return "";
+            for (String[] p : profiles()) {
+                if (p[1].equals(puuid)) return p[0];
+            }
+        } catch (org.json.JSONException ignored) {
+        }
+        return "";
     }
 
     /** 重新录制（失败/已移除的条目） */
@@ -553,12 +591,25 @@ public class TvhApi {
         List<String[]> out = new ArrayList<String[]>();
         JSONArray arr = requestJson("/api/dvr/config/grid?start=0&limit=50", "GET", null).optJSONArray("entries");
         if (arr == null) return out;
+        List<String[]> profs = new ArrayList<String[]>();
+        try {
+            profs = profiles();
+        } catch (Exception ignored) {
+        }
         for (int i = 0; i < arr.length(); i++) {
             try {
                 JSONObject o = arr.getJSONObject(i);
                 String uuid = o.optString("uuid");
                 String name = o.optString("name");
                 if (name == null || name.trim().isEmpty()) name = "默认配置";
+                String puuid = o.optString("profile");
+                String pname = "";
+                if (puuid != null && !puuid.isEmpty()) {
+                    for (String[] p : profs) {
+                        if (p[1].equals(puuid)) { pname = p[0]; break; }
+                    }
+                }
+                if (!pname.isEmpty()) name = name + "（" + pname + "）";
                 out.add(new String[]{uuid, name});
             } catch (org.json.JSONException ignored) {
             }

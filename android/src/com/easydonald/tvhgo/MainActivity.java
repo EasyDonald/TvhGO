@@ -1508,16 +1508,13 @@ public class MainActivity extends Activity {
         addGroupRow(g2, tr("默认串流配置"), prefs.profile, new View.OnClickListener() {
             public void onClick(View v) { chooseStreamProfile(); }
         });
-        addGroupRow(g2, tr("VLC 包名"), prefs.vlcPackage, new View.OnClickListener() {
-            public void onClick(View v) {
-                editTextDialog(tr("VLC 包名"), prefs.vlcPackage, new OnText() {
-                    public void onText(String str) {
-                        if (!str.trim().isEmpty()) prefs.vlcPackage = str.trim();
-                        prefs.save(MainActivity.this);
-                        refreshSettingsTab();
-                    }
+        addGroupRow(g2, tr("播放器"),
+                prefs.playerPkg == null || prefs.playerPkg.isEmpty() ? tr("系统选择器") : prefs.playerName(),
+                new View.OnClickListener() {
+                    public void onClick(View v) { choosePlayer(); }
                 });
-            }
+        addGroupRow(g2, tr("管理播放器"), prefs.players.size() + tr(" 个"), new View.OnClickListener() {
+            public void onClick(View v) { showPlayerManager(); }
         });
         settingsContent.addView(pad(g2));
 
@@ -1677,6 +1674,123 @@ public class MainActivity extends Activity {
                     }
                 })
                 .setNegativeButton(tr("取消"), null)
+                .show();
+    }
+
+    /** 切换播放器（含“系统选择器”） */
+    private void choosePlayer() {
+        final java.util.List<String> labels = new java.util.ArrayList<String>();
+        labels.add(tr("系统选择器"));
+        for (Prefs.Player p : prefs.players) labels.add(p.name + "  ·  " + p.pkg);
+        int sel = 0;
+        for (int i = 0; i < prefs.players.size(); i++) {
+            if (prefs.players.get(i).pkg.equals(prefs.playerPkg)) sel = i + 1;
+        }
+        showPicker(tr("播放器"), labels, sel, new OnPick() {
+            public void onPick(int index) {
+                prefs.playerPkg = index == 0 ? "" : prefs.players.get(index - 1).pkg;
+                prefs.save(MainActivity.this);
+                refreshSettingsTab();
+            }
+        });
+    }
+
+    /** 管理外部播放器：新增 / 编辑 / 删除 */
+    private void showPlayerManager() {
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(8), dp(6), dp(8), dp(6));
+        for (int i = 0; i < prefs.players.size(); i++) {
+            final int idx = i;
+            Prefs.Player pl = prefs.players.get(i);
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            row.setPadding(dp(12), dp(12), dp(12), dp(12));
+            row.setBackground(roundBg(CARD, 12));
+            LinearLayout col = new LinearLayout(this);
+            col.setOrientation(LinearLayout.VERTICAL);
+            col.addView(text(pl.name, 15, TEXT, false));
+            col.addView(text(pl.pkg, 11, DIM, false));
+            row.addView(col, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+            row.addView(text("›", 18, DIM, false));
+            row.setOnClickListener(new View.OnClickListener() {
+                public void onClick(View v) {
+                    if (pickerDialog != null) pickerDialog.dismiss();
+                    editPlayer(idx);
+                }
+            });
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            lp.bottomMargin = dp(8);
+            box.addView(row, lp);
+        }
+        TextView add = text("+ " + tr("添加播放器"), 14, ACCENT, true);
+        add.setGravity(Gravity.CENTER);
+        add.setPadding(dp(12), dp(12), dp(12), dp(12));
+        add.setBackground(roundBg(Theme.isDark() ? 0x1F26C6DA : 0x3326C6DA, 12, false));
+        add.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                if (pickerDialog != null) pickerDialog.dismiss();
+                editPlayer(-1);
+            }
+        });
+        box.addView(add, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        ScrollView sv = new ScrollView(this);
+        sv.addView(box);
+        pickerDialog = dlg().setTitle(tr("外部播放器")).setView(sv)
+                .setNegativeButton(tr("关闭"), null).show();
+    }
+
+    private void editPlayer(final int idx) {
+        final boolean isNew = idx < 0;
+        Prefs.Player src = isNew ? new Prefs.Player("", "") : prefs.players.get(idx);
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(16), dp(8), dp(16), dp(8));
+        final EditText name = field();
+        name.setText(src.name);
+        name.setHint(tr("例如：VLC / MX Player"));
+        box.addView(text(tr("名称"), 12, DIM, false));
+        box.addView(name);
+        final EditText pkg = field();
+        pkg.setText(src.pkg);
+        pkg.setHint("org.videolan.vlc");
+        box.addView(text(tr("包名"), 12, DIM, false));
+        box.addView(pkg);
+        pickerDialog = dlg().setTitle(isNew ? tr("添加播放器") : tr("编辑播放器"))
+                .setView(box)
+                .setPositiveButton(tr("保存"), new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface d, int w) {
+                        String nm = name.getText().toString().trim();
+                        String pk = pkg.getText().toString().trim();
+                        if (pk.isEmpty()) {
+                            toast(tr("包名不能为空"));
+                            return;
+                        }
+                        Prefs.Player pl = new Prefs.Player(nm.isEmpty() ? pk : nm, pk);
+                        if (isNew) prefs.players.add(pl);
+                        else prefs.players.set(idx, pl);
+                        if (prefs.playerPkg == null || prefs.playerPkg.isEmpty() || isNew) {
+                            prefs.playerPkg = pk;
+                        }
+                        prefs.save(MainActivity.this);
+                        refreshSettingsTab();
+                    }
+                })
+                .setNeutralButton(isNew ? null : tr("删除"), isNew ? null : new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface d, int w) {
+                        if (prefs.players.size() <= 1) {
+                            toast(tr("至少保留一个播放器"));
+                            return;
+                        }
+                        Prefs.Player removed = prefs.players.remove(idx);
+                        if (removed.pkg.equals(prefs.playerPkg)) prefs.playerPkg = prefs.players.get(0).pkg;
+                        prefs.save(MainActivity.this);
+                        refreshSettingsTab();
+                    }
+                })
                 .show();
     }
 
@@ -1917,13 +2031,13 @@ public class MainActivity extends Activity {
         Intent i = new Intent(Intent.ACTION_VIEW);
         i.setDataAndType(Uri.parse(url), "video/*");
         i.putExtra("title", title);
-        if (prefs.preferVlc) {
-            i.setPackage(prefs.vlcPackage);
+        if (prefs.playerPkg != null && !prefs.playerPkg.isEmpty()) {
+            i.setPackage(prefs.playerPkg);
             try {
                 startActivity(i);
                 return;
             } catch (ActivityNotFoundException e) {
-                toast(tr("未找到 VLC，改用系统选择器"));
+                toast(tr("未找到该播放器，改用系统选择器"));
             }
         }
         Intent plain = new Intent(Intent.ACTION_VIEW);
@@ -2048,15 +2162,6 @@ public class MainActivity extends Activity {
         box.addView(pass);
 
 
-        final EditText vlc = field();
-        vlc.setText(prefs.vlcPackage);
-        box.addView(text(tr("播放器包名（VLC）"), 12, DIM, false));
-        box.addView(vlc);
-
-        final CheckBox prefer = new CheckBox(this);
-        prefer.setText(tr("优先用 VLC 直接播放"));
-        prefer.setChecked(prefs.preferVlc);
-        box.addView(prefer);
 
 
         Sheet.Builder b = dlg()
@@ -2067,8 +2172,6 @@ public class MainActivity extends Activity {
                         prefs.server = server.getText().toString().trim();
                         prefs.user = user.getText().toString().trim();
                         prefs.pass = pass.getText().toString();
-                        prefs.vlcPackage = vlc.getText().toString().trim();
-                        prefs.preferVlc = prefer.isChecked();
                         prefs.save(MainActivity.this);
                         api = TvhApi.from(prefs);
                         resetData();

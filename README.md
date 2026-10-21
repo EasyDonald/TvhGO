@@ -32,7 +32,7 @@ No AndroidX, no ExoPlayer, no libVLC, no third-party runtime libraries — just 
 ### DVR
 Mirrors the Tvheadend web UI's DVR tabs:
 - **Upcoming / Finished / Failed / Removed / Autorec / Timerec**
-- Upcoming: cancel / stop / delete
+- Upcoming / recording: **edit** (title, start, stop, pre/post minutes, enabled), cancel, stop, delete
 - All DVR lists are **paged** (400 per request, follows 	otal) — no 200-item cap
 - Finished: play / **download to phone** (system DownloadManager with Basic auth header) / delete, header shows total size
 - Failed & Removed: **re-record** (`api/dvr/entry/rerecord/toggle`)

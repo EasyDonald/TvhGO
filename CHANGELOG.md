@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.3
+- Server address is no longer displayed anywhere in the UI (header, channel page status line, status page, settings rows, profile switcher) — only the profile name is shown, so screenshots don't leak the domain
+- The URL is still editable in the server edit dialog and still used by “Open Tvheadend web UI”
+
 ## 1.3.2
 - Themed text fields: text/hint colors now follow the theme (white-on-white in light mode fixed), rounded background, no underline
 

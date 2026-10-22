@@ -5,6 +5,14 @@ All notable changes to TvhGO are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.4]
+
+### Added
+- Settings / server profiles: profiles can now be deleted. The server switcher lists every profile with a delete action per row and asks for confirmation; at least one profile is always kept, and deleting the active profile falls back to the first remaining one. Deleting an entry before the active one keeps the active selection pointing at the same server.
+
+### Fixed
+- Server profile indices are re-based correctly after a deletion that sits before the current profile.
+
 ## [1.5.3]
 
 ### Changed

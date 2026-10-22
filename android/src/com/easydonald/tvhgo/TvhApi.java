@@ -78,7 +78,7 @@ public class TvhApi {
         String text = in == null ? "" : readAll(in);
         c.disconnect();
         if (code == 401) throw new IOException("认证失败 (HTTP 401)，请检查用户名/密码");
-        if (code == 403) throw new IOException("权限不足 (HTTP 403)：请检查该账号是否具有管理员（Admin）权限");
+        if (code == 403) throw new IOException("权限不足 (HTTP 403)：该账号没有被允许访问这个功能");
         if (code >= 400) throw new IOException("HTTP " + code + (text.isEmpty() ? "" : ": " + text.trim()));
         try {
             return text.trim().isEmpty() ? new JSONObject() : new JSONObject(text);
@@ -193,6 +193,7 @@ public class TvhApi {
             s.service = o.optString("service");
             s.state = o.optString("state");
             s.profile = o.optString("profile");
+            s.title = o.optString("title");
             s.inBps = o.optDouble("in", 0);
             s.outBps = o.optDouble("out", 0);
             out.add(s);

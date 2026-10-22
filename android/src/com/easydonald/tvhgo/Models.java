@@ -31,6 +31,16 @@ class SubInfo {
 }
 
 
+/** 输入流 / 调谐器 */
+class InputInfo {
+    String uuid = "";
+    String input = "";
+    String stream = "";
+    int subs;
+    int signal;
+    int snr;
+}
+
 /** 录制任务 */
 class DvrEntry {
     String uuid = "";

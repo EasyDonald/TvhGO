@@ -449,6 +449,7 @@ public class MainActivity extends Activity {
             public void run() {
                 try {
                     final List<SubInfo> subs = api.subscriptions();
+                    final List<InputInfo> ins = api.inputs();
                     final List<TvhApi.ConnInfo> cl = api.connectionsList();
                     final String info;
                     final int conns, chCount, tagCount;
@@ -474,7 +475,7 @@ public class MainActivity extends Activity {
                             lastChCount = chCount;
                             lastTagCount = tagCount;
                             int y = statusView.getScrollY();
-                            renderStatus(info, subs, conns, chCount, tagCount);
+                            renderStatus(info, subs, ins, conns, chCount, tagCount);
                             statusView.scrollTo(0, y);
                         }
                     });
@@ -506,7 +507,7 @@ public class MainActivity extends Activity {
         return t;
     }
 
-    private void renderStatus(String info, List<SubInfo> subs,
+    private void renderStatus(String info, List<SubInfo> subs, List<InputInfo> ins,
                               int conns, int chCount, int tagCount) {
         statusContent.removeAllViews();
         statusContent.addView(section(tr("服务器")));
@@ -537,6 +538,15 @@ public class MainActivity extends Activity {
                 public void onClick(View v) { subDialog(subRef); }
             });
             statusContent.addView(box, lp);
+        }
+
+        // 输入流：只显示调谐器与流信息，不显示码率
+        statusContent.addView(section(tr("输入流（") + ins.size() + "）"));
+        if (ins.isEmpty()) statusContent.addView(text(tr("当前没有活动的输入流"), 12, DIM, false));
+        for (InputInfo in : ins) {
+            statusContent.addView(kv(in.input, shorten(in.stream, 46)));
+            statusContent.addView(text(tr("  订阅 ") + in.subs
+                    + (in.signal > 0 ? tr("  ·  信号 ") + in.signal : ""), 10, DIM, false));
         }
     }
 
@@ -901,8 +911,8 @@ public class MainActivity extends Activity {
                             if (tab == 0) {
                                 Collections.sort(list, new Comparator<DvrEntry>() {
                                     public int compare(DvrEntry a, DvrEntry b) {
-                                        boolean ra = a.start <= nowSec;
-                                        boolean rb = b.start <= nowSec;
+                                        boolean ra = isRecording(a);
+                                        boolean rb = isRecording(b);
                                         if (ra != rb) return ra ? -1 : 1;   // 正在录制的排最前
                                         return Long.compare(a.start, b.start);
                                     }
@@ -956,6 +966,12 @@ public class MainActivity extends Activity {
                 }
             }
         });
+    }
+
+    /** 是否正在录制（含提前开录：sched_status=recording 或 state=Running） */
+    private boolean isRecording(DvrEntry d) {
+        if (d.schedStatus != null && d.schedStatus.toLowerCase().contains("record")) return true;
+        return d.state != null && d.state.equalsIgnoreCase("running");
     }
 
     private void dvrMenu(final DvrEntry d) {
@@ -2608,7 +2624,7 @@ public class MainActivity extends Activity {
             top.setOrientation(LinearLayout.HORIZONTAL);
             top.setGravity(Gravity.CENTER_VERTICAL);
             top.addView(text(time, 10, DIM, false), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-            if (!d.finished && d.schedStatus != null && d.schedStatus.contains("recording")) {
+            if (!d.finished && isRecording(d)) {
                 TextView live = text(tr("录制中"), 9, WARN, true);
                 live.setPadding(dp(6), dp(2), dp(6), dp(2));
                 live.setBackground(roundBg(0x1FFF7043, 8, false));

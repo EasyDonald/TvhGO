@@ -108,6 +108,10 @@ public class EpgTimelineView extends View {
         int firstRow = Math.max(0, (int) (scrollY / rowH));
         int lastRow = Math.min(channels.size() - 1, (int) ((scrollY + getHeight() - rulerH) / rowH));
 
+        // 只允许在刻度线以下绘制，避免滚动时节目块覆盖时间刻度
+        canvas.save();
+        canvas.clipRect(0, rulerH, getWidth(), getHeight());
+
         // 行背景 + 分隔线
         paint.setColor(ROW_B);
         for (int r = firstRow; r <= lastRow; r++) {
@@ -119,32 +123,6 @@ public class EpgTimelineView extends View {
             paint.setColor(LINE);
             canvas.drawRect(labelW, y + rowH - 1, getWidth(), y + rowH, paint);
         }
-
-        // 顶部时间刻度带
-        paint.setColor(RULER_BG);
-        canvas.drawRect(0, 0, getWidth(), rulerH, paint);
-        paint.setColor(LABEL_BG);
-        canvas.drawRect(0, 0, labelW, rulerH, paint);
-
-        long tick = winStart - (winStart % 1800);
-        text.setTextSize(10 * density);
-        for (long t = tick; t <= winEnd; t += 1800) {
-            float x = xFor(t);
-            if (x < labelW - 1 || x > getWidth()) continue;
-            boolean hour = (t % 3600) == 0;
-            paint.setColor(hour ? TEXT : LINE);
-            canvas.drawRect(x, hour ? rulerH - 9 * density : rulerH - 5 * density, x + 1, getHeight(), paint);
-            String label = hhmm.format(new Date(t * 1000));
-            text.setColor(hour ? TEXT : DIM);
-            text.setTypeface(hour ? Typeface.DEFAULT_BOLD : Typeface.DEFAULT);
-            float tw = text.measureText(label);
-            if (x + tw + 6 * density < getWidth()) {
-                canvas.drawText(label, x + 3 * density, rulerH - 10 * density, text);
-            }
-        }
-        text.setTypeface(Typeface.DEFAULT);
-        paint.setColor(LINE);
-        canvas.drawRect(0, rulerH - 1, getWidth(), rulerH, paint);
 
         // 节目块
         text.setTextSize(11 * density);
@@ -205,7 +183,35 @@ public class EpgTimelineView extends View {
             text.setColor(LINE);
             canvas.drawRect(0, y + rowH - 1, labelW, y + rowH, paint);
         }
+        canvas.restore();
 
+        // 顶部刻度带（最后绘制，保证始终位于最上层）
+        paint.setColor(RULER_BG);
+        canvas.drawRect(0, 0, getWidth(), rulerH, paint);
+        paint.setColor(LABEL_BG);
+        canvas.drawRect(0, 0, labelW, rulerH, paint);
+        paint.setColor(LINE);
+        canvas.drawRect(labelW - 1, 0, labelW, rulerH, paint);
+
+        long tick = winStart - (winStart % 1800);
+        text.setTextSize(10 * density);
+        for (long t = tick; t <= winEnd; t += 1800) {
+            float x = xFor(t);
+            if (x < labelW - 1 || x > getWidth()) continue;
+            boolean hour = (t % 3600) == 0;
+            paint.setColor(hour ? TEXT : LINE);
+            canvas.drawRect(x, rulerH - (hour ? 9 : 5) * density, x + 1, rulerH, paint);
+            String label = hhmm.format(new Date(t * 1000));
+            text.setColor(hour ? TEXT : DIM);
+            text.setTypeface(hour ? Typeface.DEFAULT_BOLD : Typeface.DEFAULT);
+            float tw = text.measureText(label);
+            if (x + tw + 6 * density < getWidth()) {
+                canvas.drawText(label, x + 3 * density, rulerH - 10 * density, text);
+            }
+        }
+        text.setTypeface(Typeface.DEFAULT);
+        paint.setColor(LINE);
+        canvas.drawRect(0, rulerH - 1, getWidth(), rulerH, paint);
     }
 
     /** 频道名最多画两行，超出用省略号 */

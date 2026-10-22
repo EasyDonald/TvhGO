@@ -1,79 +1,82 @@
 # Changelog
 
-## 1.5.1
-- **Fix EPG time ruler being invisible**: a duplicated ruler-background draw at the end of onDraw painted over the tick labels
-- **Input streams show the raw ps** from /api/status/inputs again — the estimated value (sum of subscriptions on that input) and the “hold last value” smoothing were misleading and have been removed; a zero rate now shows —
+All notable changes to TvhGO are documented in this file.
 
-## 1.5
-- EPG: removed the redundant “Now” button (refresh already reloads)
-- EPG timeline: proper time ruler (background band, hour ticks bold, 30-minute ticks) — previously it was hard to tell the actual time
-- EPG timeline: long channel names now wrap onto **two lines** in the left column
-- Status → input streams: when the mux reports ps = 0 (common for IPTV inputs) the bitrate is derived from the subscriptions on that input, or shown as “—” instead of a stuck “0 kbps”
-- Status → subscriptions: DVR recordings have no client UA; the row/detail now shows the subscription title (DVR: <recording name>)
-- Status → subscription detail: new **“Play this channel”** action (resolves the channel by name and opens the player)
-- About: tapping it opens https://github.com/EasyDonald/TvhGO
-- “Open Tvheadend web UI” now opens the URL with embedded HTTP Basic credentials
-- 403 message no longer claims an admin role is required (DVR access can be granted without admin)
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 1.4.2
-- **Fix crash** when tapping an Autorec / Timerec row: the list click handler always read the recording-entries list, so index lookups went out of bounds
-- Upcoming list is sorted by start time ascending with the **running recording pinned first**; finished / failed / removed are sorted newest-first; rules by name
+## [1.5.1]
 
-## 1.4.1
-- DVR profile picker shows the **DVR profile name only** (DVR profiles are not stream profiles — the stream profile annotation was wrong and has been removed)
-- Reverted the “default stream profile follows the DVR profile” behaviour; the default stream profile is pass again unless you pick one
-- “About” now reads the real version from the APK instead of a hardcoded string
+### Fixed
+- EPG timeline: the time ruler was drawn twice; the second background fill covered the tick lines and labels. The duplicate draw has been removed and the ruler now renders correctly.
+- Status / input streams: bitrate is taken directly from `bps` returned by `/api/status/inputs`. The previous per-input estimate (sum of subscriptions on that input) and the value-hold smoothing produced inconsistent readings and have been removed. A zero value is rendered as `—`.
 
-## 1.4
-- Upcoming / recording entries can be **edited**: title, start, stop, pre/post minutes, enabled (/api/idnode/save)
-- DVR row subtitle is no longer highlighted red when a file has errors
-- Removed the play-count from DVR rows
-- **DVR config presets fixed**: config names are resolved from the server and annotated with the stream profile they use (e.g. “默认配置（pass-norewrite）”); on first run the default stream profile follows the default DVR config’s profile instead of a hardcoded pass
+### Notes
+- `bps` is the multiplex bitrate. Subscription `in` / `out` are per-client byte rates and are not directly comparable to it.
 
-## 1.3.4
-- **DVR lists are paged**: upcoming / finished / failed / removed / autorec / timerec now request 400 per page and keep going until 	otal, fixing the 200-item cap reported for Finished
-- **Multiple external players**: add your own players with a display name + package name, edit, delete, and switch between them (VLC is preloaded, “System chooser” always available)
+## [1.5]
 
-## 1.3.3
-- Server address is no longer displayed anywhere in the UI (header, channel page status line, status page, settings rows, profile switcher) — only the profile name is shown, so screenshots don't leak the domain
-- The URL is still editable in the server edit dialog and still used by “Open Tvheadend web UI”
+### Added
+- EPG timeline: time ruler with distinct styles for full-hour and half-hour ticks.
+- Status / subscription detail: **Play this channel** action, resolved by channel name.
+- About: opens the project page at https://github.com/EasyDonald/TvhGO.
 
-## 1.3.2
-- Themed text fields: text/hint colors now follow the theme (white-on-white in light mode fixed), rounded background, no underline
+### Changed
+- EPG: channel names in the left column wrap onto two lines instead of being truncated.
+- Status / subscriptions: DVR recordings carry no client user-agent; the subscription title (`DVR: <name>`) is shown instead.
+- Open Tvheadend web UI: the URL now embeds HTTP Basic credentials so the browser authenticates directly.
+- Removed the redundant “Now” button from the EPG toolbar.
+- HTTP 403 is reported as a permission error; administrator rights are no longer assumed, since DVR access can be granted independently.
 
-## 1.3.1
-- All icons are `VectorDrawable` (refresh / tune / link / play / back / clear / arrow-down); fixes the off-center refresh glyph
+## [1.4.2]
 
-## 1.3
-- DVR page mirrors the web UI: **Upcoming / Finished / Failed / Removed / Autorec / Timerec**
-- Failed & Removed can be **re-recorded** (`api/dvr/entry/rerecord/toggle`)
-- Autorec / Timerec rules: enable, disable, delete, details
+### Fixed
+- Autorec / Timerec rows: tapping a rule terminated the app. The list click handler always read the recording-entry array, while these two categories use the rule array, causing an out-of-bounds access. Events are now dispatched by the active category.
 
-## 1.2.3
-- Dialogs are fully hand-drawn (`Sheet.java`): bottom card, drag handle, themed buttons and list rows — no `AlertDialog`
+### Changed
+- Sorting: upcoming entries are ordered by start time with running recordings pinned first; finished, failed and removed entries are ordered newest first; autorec and timerec rules are ordered by name.
 
-## 1.2.2
-- Lists are full-bleed with 1px separators
-- Native `Spinner` replaced by a custom dropdown button + themed list; DVR view switch became a segmented control
+## [1.4.1]
 
-## 1.2.1
-- UI rebuilt: pill indicator on the bottom bar, grouped settings cards, new channel/DVR rows, new header
+### Fixed
+- DVR configuration picker: DVR profiles (Digital Video Recorder Profile) and stream profiles are distinct concepts. The picker now shows only the DVR configuration name.
+- Default stream profile: restored to `pass` and no longer derived from the recording configuration.
+- About: the version label is read from the APK `versionName` instead of a fixed string.
 
-## 1.2
-- Drop connections from the status page (`api/connections/cancel`), same call as the web UI
+## [1.4]
 
-## 1.1.1
-- Light theme fixes: themed dropdowns, card strokes, EPG block text
+### Added
+- Recording tasks in the upcoming and recording states can be edited: title, start time, stop time, pre/post padding and enabled state (`POST /api/idnode/save`).
 
-## 1.1
-- Dark / light / follow-system theme
-- Download finished recordings to the phone
-- Show total recording size
-- Subscription details dialog
+### Changed
+- DVR configuration names are read from the server.
+- Removed the play counter from recording rows.
+- Errors on a recording no longer highlight the row subtitle in a warning colour.
 
-## 1.0
-- Renamed to **TvhGO**, new package `com.easydonald.tvhgo`, new icon, card UI
+## [1.3.4]
 
-## 0.x (internal iterations)
-- 0.9 (1.2.3) …
-- Multi-server profiles, per-channel stream profile, 7-day EPG, four UI languages, DVR management, EPG timeline, status polling
+### Fixed
+- DVR lists are now paged (400 entries per request, following `total`), removing the 200-entry limit on finished recordings.
+- Autorec and Timerec lists use the same paging.
+
+### Added
+- Multiple external players: add players with a display name and package name, edit, delete and switch between them. VLC is preinstalled and the system chooser remains available.
+
+## [1.3.3]
+
+### Changed
+- The server address is no longer displayed in the interface. The header, channel status line, status page, settings rows and profile switcher show the configuration name only.
+- The address is available in the server edit dialog, where it is configured.
+
+## [1.3.2]
+
+First public release.
+
+### Added
+- Channel list with channel number or picon, search by name or number, group filter, subtitle showing either the group or the current programme.
+- Channel detail with per-day EPG (today, tomorrow, `MM-dd`, up to seven days), per-channel recording and per-channel stream profile.
+- Playback through an external player (VLC or the system chooser) and stream URL sharing.
+- EPG timeline: drag to browse, tap a programme to play or record.
+- DVR: upcoming, finished, failed, removed, autorec and timerec categories, with cancel, stop, delete, download to device, re-record and rule enable/disable.
+- Status: server information, active subscriptions, input streams and connections, including the ability to drop a user's connections.
+- Settings: multiple server profiles, default stream profile, dark/light theme and four interface languages (Simplified Chinese, Traditional Chinese, English, Japanese).

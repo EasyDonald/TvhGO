@@ -25,6 +25,7 @@ class SubInfo {
     String service = "";
     String state = "";
     String profile = "";
+    String title = "";
     double inBps;
     double outBps;
 }

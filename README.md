@@ -41,7 +41,7 @@ Mirrors the Tvheadend web UI's DVR tabs:
 - Autorec & Timerec: list rules, enable/disable, delete, details
 
 ### Status
-- Server info, active subscriptions (user / client / channel / kbps), input streams (bitrate / signal)
+- Server info, active subscriptions (user / client / channel / kbps)
 - Tap a subscription to see details, **play that channel**, or **drop that user's connections** (`api/connections/cancel` — same call as the web UI's *Status → Connections → Cancel*)
 
 ### Settings

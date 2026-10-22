@@ -529,7 +529,11 @@ public class MainActivity extends Activity {
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             lp.bottomMargin = dp(6);
-            box.addView(text(s.username + "  ·  " + shorten(s.client, 42), 13, TEXT, true));
+            String ua = (s.client == null || s.client.trim().isEmpty())
+                    ? (s.title == null || s.title.trim().isEmpty() ? "—" : s.title)
+                    : s.client;
+            String who = (s.username == null || s.username.trim().isEmpty()) ? "—" : s.username;
+            box.addView(text(who + "  ·  " + shorten(ua, 42), 13, TEXT, true));
             box.addView(text(tr("频道：") + s.channel + (s.service.isEmpty() ? "" : "（" + shorten(s.service, 40) + "）"), 11, DIM, false));
             box.addView(text(tr("状态：") + s.state + "  ·  " + s.profile + "  ·  " +
                     kbps(s.inBps) + tr(" 入 / ") + kbps(s.outBps) + tr(" 出"), 11, DIM, false));
@@ -556,43 +560,86 @@ public class MainActivity extends Activity {
                 lastInputBps.put(key, in.bps);
                 inputZeroTicks.put(key, 0);
             }
+            String rate;
+            if (shownBps > 0) {
+                rate = kbpsInput(shownBps);
+            } else {
+                // 有的 mux（IPTV）bps 一直是 0，用同一输入上的订阅码率兜底
+                double sum = 0;
+                boolean matched = false;
+                for (SubInfo sb : subs) {
+                    if (sb.service != null && in.input != null && sb.service.startsWith(in.input)) {
+                        sum += Math.max(sb.inBps, sb.outBps);
+                        matched = true;
+                    }
+                }
+                rate = matched && sum > 0 ? ("≈" + kbps(sum)) : "—";
+            }
             statusContent.addView(kv(in.input, shorten(in.stream, 46)));
-            statusContent.addView(text(tr("  订阅 ") + in.subs + "  ·  " + kbpsInput(shownBps) +
+            statusContent.addView(text(tr("  订阅 ") + in.subs + "  ·  " + rate +
                     (in.signal > 0 ? tr("  ·  信号 ") + in.signal : ""), 10, DIM, false));
         }
     }
 
-    /** 订阅详情：可断开该用户的连接（对应网页版 状态→连接→Cancel） */
+    /** 订阅详情：可播放该频道、断开该用户 */
     private void subDialog(final SubInfo s) {
-        int matched = 0;
-        for (TvhApi.ConnInfo c : connList) {
-            if (s.username != null && s.username.equals(c.user)) matched++;
-        }
-        String msg = tr("用户") + "：" + s.username + "\n"
-                + tr("客户端") + "：" + s.client + "\n"
+        final int matched = countUserConnections(s.username);
+        final Channel ch = findChannelByName(s.channel);
+        String ua = (s.client == null || s.client.trim().isEmpty())
+                ? (s.title == null || s.title.trim().isEmpty() ? "—" : s.title)
+                : s.client;
+        String msg = tr("用户") + "：" + (s.username == null || s.username.isEmpty() ? "—" : s.username) + "\n"
+                + tr("客户端") + "：" + ua + "\n"
                 + tr("频道") + "：" + s.channel + "\n"
                 + tr("服务") + "：" + s.service + "\n"
                 + "profile：" + s.profile + "\n"
                 + tr("码率") + "：" + kbps(s.inBps) + " / " + kbps(s.outBps) + "\n\n"
                 + tr("该用户当前有") + " " + matched + " " + tr("条连接");
+
+        List<String> acts = new ArrayList<String>();
+        final int IDX_PLAY = 0;
+        if (ch != null) acts.add(tr("播放该频道"));
+        final int iUser = acts.size();
+        acts.add(tr("断开该用户") + (matched > 0 ? "（" + matched + "）" : ""));
+        final int iAll = acts.size();
+        acts.add(tr("断开全部连接"));
         dlg().setTitle(tr("订阅详情"))
                 .setMessage(msg)
-                .setPositiveButton(matched > 0 ? tr("断开该用户") : tr("断开全部连接"),
-                        new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface d, int w) {
-                                int n = 0;
-                                for (TvhApi.ConnInfo c : connList) {
-                                    if (s.username != null && s.username.equals(c.user)) n++;
-                                }
-                                if (n > 0) cancelUserConnections(s.username);
-                                else confirmCancelAll();
-                            }
-                        })
-                .setNeutralButton(tr("断开全部连接"), new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface d, int w) { confirmCancelAll(); }
+                .setItems(acts.toArray(new String[0]), new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface d, int which) {
+                        if (ch != null && which == IDX_PLAY) {
+                            playUuid(ch.uuid, ch.name);
+                        } else if (which == iUser) {
+                            if (matched > 0) cancelUserConnections(s.username);
+                            else toast(tr("没有找到匹配的连接"));
+                        } else if (which == iAll) {
+                            confirmCancelAll();
+                        }
+                    }
                 })
                 .setNegativeButton(tr("关闭"), null)
                 .show();
+    }
+
+    private int countUserConnections(String user) {
+        int n = 0;
+        for (TvhApi.ConnInfo c : connList) {
+            if (user != null && user.equals(c.user)) n++;
+        }
+        return n;
+    }
+
+    /** 按频道名找频道（订阅里只有频道名） */
+    private Channel findChannelByName(String name) {
+        if (name == null) return null;
+        String want = name.trim();
+        for (Channel c : all) {
+            if (c.name != null && c.name.trim().equals(want)) return c;
+        }
+        for (Channel c : all) {
+            if (c.name != null && c.name.contains(want) && want.length() >= 2) return c;
+        }
+        return null;
     }
 
     private void cancelUserConnections(final String username) {
@@ -684,9 +731,6 @@ public class MainActivity extends Activity {
         bar.setGravity(Gravity.CENTER_VERTICAL);
         epgStatus = text(tr("拖动浏览，点节目可播放/录制"), 10, DIM, false);
         bar.addView(epgStatus, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        bar.addView(button(tr("现在"), new View.OnClickListener() {
-            public void onClick(View view) { loadEpg(); }
-        }));
         v.addView(bar);
 
         timeline = new EpgTimelineView(this);
@@ -1719,7 +1763,17 @@ public class MainActivity extends Activity {
             verName = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
         } catch (Exception ignored) {
         }
-        addGroupRow(g5, tr("关于"), "TvhGO " + (verName == null ? "" : verName) + " · " + getPackageName(), null);
+        addGroupRow(g5, tr("关于"), "TvhGO " + (verName == null ? "" : verName) + " · " + getPackageName(),
+                new View.OnClickListener() {
+                    public void onClick(View v) {
+                        try {
+                            startActivity(new Intent(Intent.ACTION_VIEW,
+                                    Uri.parse("https://github.com/EasyDonald/TvhGO")));
+                        } catch (Exception e) {
+                            toast(tr("没有可用的浏览器"));
+                        }
+                    }
+                });
         settingsContent.addView(pad(g5));
     }
 
@@ -2281,7 +2335,12 @@ public class MainActivity extends Activity {
 
     private void openWebUi() {
         try {
-            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(prefs.base())));
+            String url = prefs.base();
+            if (prefs.user != null && !prefs.user.isEmpty()) {
+                url = url.replaceFirst("://", "://" + Uri.encode(prefs.user) + ":"
+                        + Uri.encode(prefs.pass == null ? "" : prefs.pass) + "@");
+            }
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
         } catch (Exception e) {
             toast(tr("没有可用的浏览器"));
         }

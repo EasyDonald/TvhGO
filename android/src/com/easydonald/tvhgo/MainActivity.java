@@ -87,9 +87,7 @@ public class MainActivity extends Activity {
     private boolean statusBusy = false;
     private String lastInfo = "";
     private int lastConns = 0, lastChCount = 0, lastTagCount = 0;
-    private final Map<String, Long> lastInputBps = new LinkedHashMap<String, Long>();
     private List<TvhApi.ConnInfo> connList = new ArrayList<TvhApi.ConnInfo>();
-    private final Map<String, Integer> inputZeroTicks = new LinkedHashMap<String, Integer>();
     private TextView titleView;
     private TextView subtitleView;
 
@@ -319,8 +317,6 @@ public class MainActivity extends Activity {
         statusLoaded = epgLoaded = dvrLoaded = false;
         dvrConfigList = null;
         streamProfiles = null;
-        lastInputBps.clear();
-        inputZeroTicks.clear();
         if (channelAdapter != null) channelAdapter.notifyDataSetChanged();
         if (statusLine != null) statusLine.setText("");
         if (dvrItems != null) {
@@ -453,7 +449,6 @@ public class MainActivity extends Activity {
             public void run() {
                 try {
                     final List<SubInfo> subs = api.subscriptions();
-                    final List<InputInfo> ins = api.inputs();
                     final List<TvhApi.ConnInfo> cl = api.connectionsList();
                     final String info;
                     final int conns, chCount, tagCount;
@@ -479,7 +474,7 @@ public class MainActivity extends Activity {
                             lastChCount = chCount;
                             lastTagCount = tagCount;
                             int y = statusView.getScrollY();
-                            renderStatus(info, subs, ins, conns, chCount, tagCount);
+                            renderStatus(info, subs, conns, chCount, tagCount);
                             statusView.scrollTo(0, y);
                         }
                     });
@@ -511,7 +506,7 @@ public class MainActivity extends Activity {
         return t;
     }
 
-    private void renderStatus(String info, List<SubInfo> subs, List<InputInfo> ins,
+    private void renderStatus(String info, List<SubInfo> subs,
                               int conns, int chCount, int tagCount) {
         statusContent.removeAllViews();
         statusContent.addView(section(tr("服务器")));
@@ -542,16 +537,6 @@ public class MainActivity extends Activity {
                 public void onClick(View v) { subDialog(subRef); }
             });
             statusContent.addView(box, lp);
-        }
-
-        statusContent.addView(section(tr("输入流（") + ins.size() + "）"));
-        if (ins.isEmpty()) statusContent.addView(text(tr("当前没有活动的输入流"), 12, DIM, false));
-        for (InputInfo in : ins) {
-            // 直接用接口返回的 bps，不做估算/保持
-            String rate = in.bps > 0 ? kbpsInput(in.bps) : "—";
-            statusContent.addView(kv(in.input, shorten(in.stream, 46)));
-            statusContent.addView(text(tr("  订阅 ") + in.subs + "  ·  " + rate +
-                    (in.signal > 0 ? tr("  ·  信号 ") + in.signal : ""), 10, DIM, false));
         }
     }
 
@@ -685,12 +670,6 @@ public class MainActivity extends Activity {
     private String kbps(double bytesPerSec) {
         if (bytesPerSec <= 0) return "0 kbps";
         return String.format(Locale.US, "%.0f kbps", bytesPerSec / 125.0);
-    }
-
-    /** 输入流的 bps：接口返回比特/秒，按 ÷1000 换算成 kbit/s */
-    private String kbpsInput(long bitsPerSec) {
-        if (bitsPerSec <= 0) return "0 kbps";
-        return String.format(Locale.US, "%.0f kbps", bitsPerSec / 1000.0);
     }
 
     // ---------------- EPG 时间轴 ----------------

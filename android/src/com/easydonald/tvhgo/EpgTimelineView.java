@@ -206,11 +206,6 @@ public class EpgTimelineView extends View {
             canvas.drawRect(0, y + rowH - 1, labelW, y + rowH, paint);
         }
 
-        // 顶部刻度条
-        paint.setColor(RULER_BG);
-        canvas.drawRect(0, 0, getWidth(), rulerH, paint);
-        paint.setColor(LINE);
-        canvas.drawRect(0, rulerH - 1, getWidth(), rulerH, paint);
     }
 
     /** 频道名最多画两行，超出用省略号 */

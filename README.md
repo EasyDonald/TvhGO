@@ -45,7 +45,7 @@ Mirrors the Tvheadend web UI's DVR tabs:
 - Tap a subscription to see details, **play that channel**, or **drop that user's connections** (`api/connections/cancel` — same call as the web UI's *Status → Connections → Cancel*)
 
 ### Settings
-- Multiple server profiles: switch / edit / add
+- Multiple server profiles: switch / edit / add / **delete**
 - **Default stream profile**, read from the server (`api/idnode/load?class=profile`)
 - Channel list: left column (number / picon), subtitle content
 - **Theme**: follow system / dark / light (whole UI, pickers and dialogs included)

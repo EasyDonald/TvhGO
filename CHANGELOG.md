@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.5
+- EPG: removed the redundant “Now” button (refresh already reloads)
+- EPG timeline: proper time ruler (background band, hour ticks bold, 30-minute ticks) — previously it was hard to tell the actual time
+- EPG timeline: long channel names now wrap onto **two lines** in the left column
+- Status → input streams: when the mux reports ps = 0 (common for IPTV inputs) the bitrate is derived from the subscriptions on that input, or shown as “—” instead of a stuck “0 kbps”
+- Status → subscriptions: DVR recordings have no client UA; the row/detail now shows the subscription title (DVR: <recording name>)
+- Status → subscription detail: new **“Play this channel”** action (resolves the channel by name and opens the player)
+- About: tapping it opens https://github.com/EasyDonald/TvhGO
+- “Open Tvheadend web UI” now opens the URL with embedded HTTP Basic credentials
+- 403 message no longer claims an admin role is required (DVR access can be granted without admin)
+
 ## 1.4.2
 - **Fix crash** when tapping an Autorec / Timerec row: the list click handler always read the recording-entries list, so index lookups went out of bounds
 - Upcoming list is sorted by start time ascending with the **running recording pinned first**; finished / failed / removed are sorted newest-first; rules by name

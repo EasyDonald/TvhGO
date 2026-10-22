@@ -120,18 +120,31 @@ public class EpgTimelineView extends View {
             canvas.drawRect(labelW, y + rowH - 1, getWidth(), y + rowH, paint);
         }
 
-        // 时间刻度（每 30 分钟）
+        // 顶部时间刻度带
+        paint.setColor(RULER_BG);
+        canvas.drawRect(0, 0, getWidth(), rulerH, paint);
+        paint.setColor(LABEL_BG);
+        canvas.drawRect(0, 0, labelW, rulerH, paint);
+
         long tick = winStart - (winStart % 1800);
-        paint.setColor(LINE);
-        text.setColor(DIM);
         text.setTextSize(10 * density);
         for (long t = tick; t <= winEnd; t += 1800) {
             float x = xFor(t);
             if (x < labelW - 1 || x > getWidth()) continue;
-            canvas.drawRect(x, rulerH, x + 1, getHeight(), paint);
+            boolean hour = (t % 3600) == 0;
+            paint.setColor(hour ? TEXT : LINE);
+            canvas.drawRect(x, hour ? rulerH - 9 * density : rulerH - 5 * density, x + 1, getHeight(), paint);
             String label = hhmm.format(new Date(t * 1000));
-            canvas.drawText(label, x + 3 * density, rulerH - 8 * density, text);
+            text.setColor(hour ? TEXT : DIM);
+            text.setTypeface(hour ? Typeface.DEFAULT_BOLD : Typeface.DEFAULT);
+            float tw = text.measureText(label);
+            if (x + tw + 6 * density < getWidth()) {
+                canvas.drawText(label, x + 3 * density, rulerH - 10 * density, text);
+            }
         }
+        text.setTypeface(Typeface.DEFAULT);
+        paint.setColor(LINE);
+        canvas.drawRect(0, rulerH - 1, getWidth(), rulerH, paint);
 
         // 节目块
         text.setTextSize(11 * density);
@@ -177,7 +190,7 @@ public class EpgTimelineView extends View {
         paint.setColor(LABEL_BG);
         canvas.drawRect(0, rulerH, labelW, getHeight(), paint);
         paint.setColor(LINE);
-        canvas.drawRect(labelW - 1, rulerH, labelW, getHeight(), paint);
+        canvas.drawRect(labelW - 1, 0, labelW, getHeight(), paint);
 
         text.setTextSize(11 * density);
         for (int r = firstRow; r <= lastRow; r++) {
@@ -185,10 +198,10 @@ public class EpgTimelineView extends View {
             float y = rulerH + r * rowH - scrollY;
             text.setColor(DIM);
             String num = c.number > 0 ? String.valueOf(c.number) : "";
-            canvas.drawText(num, 4 * density, y + 18 * density, text);
+            canvas.drawText(num, 4 * density, y + 17 * density, text);
             text.setColor(c.enabled ? TEXT : DIM);
-            String name = clip(String.valueOf(c.name), labelW - 34 * density);
-            canvas.drawText(name, 30 * density, y + 18 * density, text);
+            drawNameTwoLines(canvas, String.valueOf(c.name), 30 * density, y + 17 * density,
+                    labelW - 34 * density, 13 * density);
             text.setColor(LINE);
             canvas.drawRect(0, y + rowH - 1, labelW, y + rowH, paint);
         }
@@ -198,6 +211,22 @@ public class EpgTimelineView extends View {
         canvas.drawRect(0, 0, getWidth(), rulerH, paint);
         paint.setColor(LINE);
         canvas.drawRect(0, rulerH - 1, getWidth(), rulerH, paint);
+    }
+
+    /** 频道名最多画两行，超出用省略号 */
+    private void drawNameTwoLines(android.graphics.Canvas canvas, String name, float x, float baseY,
+                                  float maxWidth, float lineGap) {
+        if (name == null) name = "";
+        int first = text.breakText(name, true, maxWidth, null);
+        if (first >= name.length()) {
+            canvas.drawText(name, x, baseY, text);
+            return;
+        }
+        canvas.drawText(name.substring(0, first), x, baseY, text);
+        String rest = name.substring(first);
+        int second = text.breakText(rest, true, maxWidth, null);
+        String line2 = second >= rest.length() ? rest : rest.substring(0, Math.max(1, second - 1)) + "…";
+        canvas.drawText(line2, x, baseY + lineGap, text);
     }
 
     private String clip(String s, float width) {

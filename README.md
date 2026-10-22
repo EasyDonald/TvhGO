@@ -1,5 +1,7 @@
 # TvhGO
 
+<p align="center"><img src="docs/icon.png" width="120" alt="TvhGO"></p>
+
 **A lightweight Android client for [Tvheadend](https://tvheadend.org/) — channels, EPG, DVR and server status, in one small APK.**
 
 No AndroidX, no ExoPlayer, no libVLC, no third-party runtime libraries — just the Android framework. The whole app is ~100 KB.

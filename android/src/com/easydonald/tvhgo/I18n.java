@@ -241,6 +241,8 @@ public class I18n {
         add("开始时间", "開始時間", "Start time", "開始");
         add("结束时间", "結束時間", "Stop time", "終了");
         add("播放", "播放", "Play", "再生");
+        add("播放该频道", "播放該頻道", "Play this channel", "このチャンネルを再生");
+        add("没有找到匹配的连接", "找不到符合的連線", "No matching connection", "一致する接続なし");
         add("复制串流链接", "複製串流連結", "Copy stream URL", "URLをコピー");
         add("选择播放器", "選擇播放器", "Choose player", "プレーヤー選択");
         add("录制标题（可留空）", "錄影標題（可留空）", "Title (optional)", "タイトル（任意）");

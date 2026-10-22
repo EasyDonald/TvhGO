@@ -27,7 +27,7 @@ No AndroidX, no ExoPlayer, no libVLC, no third-party runtime libraries — just 
 - Stream profile can be chosen per server (default) and overridden per channel
 
 ### EPG
-- Timeline grid (time × channel) with drag scrolling, a "now" line and tap-to-play/record blocks
+- Timeline grid (time × channel) with a time ruler, drag scrolling, a "now" line and tap-to-play/record blocks; long channel names wrap to two lines
 
 ### DVR
 Mirrors the Tvheadend web UI's DVR tabs:
@@ -40,7 +40,7 @@ Mirrors the Tvheadend web UI's DVR tabs:
 
 ### Status
 - Server info, active subscriptions (user / client / channel / kbps), input streams (bitrate / signal)
-- Tap a subscription to see details and **drop that user's connections** (`api/connections/cancel` — same call as the web UI's *Status → Connections → Cancel*)
+- Tap a subscription to see details, **play that channel**, or **drop that user's connections** (`api/connections/cancel` — same call as the web UI's *Status → Connections → Cancel*)
 
 ### Settings
 - Multiple server profiles: switch / edit / add

@@ -5,6 +5,15 @@ All notable changes to TvhGO are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.3]
+
+### Changed
+- Status: the input stream section is shown again with tuner information only — input name, stream name and subscriber count (plus signal level when reported). The bitrate is intentionally not displayed: /api/status/inputs returns an average since the input started, while the Tvheadend web interface receives live per-second values over its comet channel.
+- DVR: entries are treated as “recording” based on sched_status / state, so a task that started early through pre-padding is pinned to the top of the upcoming list instead of being ordered by its nominal start time.
+
+### Fixed
+- EPG timeline: rows and programme blocks are clipped below the ruler, and the ruler is painted last, so blocks no longer cover the time labels while scrolling.
+
 ## [1.5.2]
 
 ### Changed

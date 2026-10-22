@@ -30,15 +30,6 @@ class SubInfo {
     double outBps;
 }
 
-/** 输入流 / 调谐器状态 */
-class InputInfo {
-    String input = "";
-    String stream = "";
-    int subs;
-    long bps;
-    int signal;
-    int snr;
-}
 
 /** 录制任务 */
 class DvrEntry {

@@ -1757,20 +1757,55 @@ public class MainActivity extends Activity {
 
     /** 只做切换的配置列表（不含编辑/新增入口） */
     private void showProfileSwitcher() {
-        List<String> labels = new ArrayList<String>();
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(8), dp(6), dp(8), dp(6));
         for (int i = 0; i < prefs.profiles.size(); i++) {
-            ServerProfile sp = prefs.profiles.get(i);
-            labels.add((i == prefs.current ? "● " : "○ ") + sp.name);
-        }
-        dlg()
-                .setTitle(tr("切换服务器"))
-                .setItems(labels.toArray(new String[0]), new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface d, int which) {
-                        if (which != prefs.current) switchProfile(which);
+            final int idx = i;
+            final ServerProfile sp = prefs.profiles.get(i);
+            boolean cur = idx == prefs.current;
+
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            row.setPadding(dp(14), dp(11), dp(10), dp(11));
+            row.setBackground(roundBg(CARD, 12));
+
+            LinearLayout col = new LinearLayout(this);
+            col.setOrientation(LinearLayout.VERTICAL);
+            col.addView(text((cur ? "● " : "○ ") + sp.name, 15, cur ? ACCENT : TEXT, cur));
+            String sub = (sp.user == null || sp.user.isEmpty()) ? "" : sp.user;
+            if (!sub.isEmpty()) col.addView(text(sub, 11, DIM, false));
+            row.addView(col, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+
+            if (prefs.profiles.size() > 1) {
+                final TextView del = text(tr("删除"), 12, WARN, true);
+                del.setPadding(dp(12), dp(6), dp(8), dp(6));
+                del.setOnClickListener(new View.OnClickListener() {
+                    public void onClick(View v) {
+                        if (pickerDialog != null) pickerDialog.dismiss();
+                        deleteProfile(idx);
                     }
-                })
-                .setNegativeButton(tr("取消"), null)
-                .show();
+                });
+                row.addView(del);
+            }
+
+            row.setOnClickListener(new View.OnClickListener() {
+                public void onClick(View v) {
+                    if (pickerDialog != null) pickerDialog.dismiss();
+                    if (idx != prefs.current) switchProfile(idx);
+                }
+            });
+
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            lp.bottomMargin = dp(8);
+            box.addView(row, lp);
+        }
+        ScrollView sv = new ScrollView(this);
+        sv.addView(box);
+        pickerDialog = dlg().setTitle(tr("切换服务器")).setView(sv)
+                .setNegativeButton(tr("关闭"), null).show();
     }
 
     private List<String[]> streamProfiles = null;
@@ -2392,15 +2427,24 @@ public class MainActivity extends Activity {
                 .setMessage(tr("确定删除「") + p.name + "」？")
                 .setPositiveButton(tr("删除"), new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface d, int w) {
+                        boolean wasCurrent = idx == prefs.current;
                         prefs.profiles.remove(idx);
-                        if (prefs.current >= prefs.profiles.size()) prefs.current = prefs.profiles.size() - 1;
+                        if (idx < prefs.current) {
+                            prefs.current--;
+                        } else if (prefs.current >= prefs.profiles.size()) {
+                            prefs.current = prefs.profiles.size() - 1;
+                        }
                         prefs.syncFromProfile();
                         prefs.save(MainActivity.this);
                         api = TvhApi.from(prefs);
                         resetData();
                         updateTitle();
                         toast(tr("已删除，当前配置：") + prefs.cur().name);
-                        loadChannels();
+                        if (wasCurrent) {
+                            switchTab(TAB_CH);
+                            loadChannels();
+                        }
+                        refreshSettingsTab();
                     }
                 })
                 .setNegativeButton(tr("取消"), null)

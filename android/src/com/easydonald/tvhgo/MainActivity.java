@@ -547,34 +547,8 @@ public class MainActivity extends Activity {
         statusContent.addView(section(tr("输入流（") + ins.size() + "）"));
         if (ins.isEmpty()) statusContent.addView(text(tr("当前没有活动的输入流"), 12, DIM, false));
         for (InputInfo in : ins) {
-            // 输入流的 bps 会偶发跳 0，做几拍保持，避免界面闪烁
-            String key = in.input + "|" + in.stream;
-            long shownBps = in.bps;
-            if (in.bps <= 0) {
-                Long prev = lastInputBps.get(key);
-                Integer z = inputZeroTicks.get(key);
-                int zz = (z == null ? 0 : z) + 1;
-                inputZeroTicks.put(key, zz);
-                if (prev != null && prev > 0 && zz <= 3) shownBps = prev;
-            } else {
-                lastInputBps.put(key, in.bps);
-                inputZeroTicks.put(key, 0);
-            }
-            String rate;
-            if (shownBps > 0) {
-                rate = kbpsInput(shownBps);
-            } else {
-                // 有的 mux（IPTV）bps 一直是 0，用同一输入上的订阅码率兜底
-                double sum = 0;
-                boolean matched = false;
-                for (SubInfo sb : subs) {
-                    if (sb.service != null && in.input != null && sb.service.startsWith(in.input)) {
-                        sum += Math.max(sb.inBps, sb.outBps);
-                        matched = true;
-                    }
-                }
-                rate = matched && sum > 0 ? ("≈" + kbps(sum)) : "—";
-            }
+            // 直接用接口返回的 bps，不做估算/保持
+            String rate = in.bps > 0 ? kbpsInput(in.bps) : "—";
             statusContent.addView(kv(in.input, shorten(in.stream, 46)));
             statusContent.addView(text(tr("  订阅 ") + in.subs + "  ·  " + rate +
                     (in.signal > 0 ? tr("  ·  信号 ") + in.signal : ""), 10, DIM, false));

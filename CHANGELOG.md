@@ -5,6 +5,14 @@ All notable changes to TvhGO are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.2]
+
+### Changed
+- Status: the input stream section has been removed. The bitrate reported by /api/status/inputs is an average since the input started and drifts away from the value shown by the Tvheadend web interface, which receives live updates over its comet channel. Rather than display numbers that cannot be kept consistent, the section is no longer shown; subscriptions and connections remain available.
+
+### Fixed
+- EPG timeline: the time ruler was drawn twice and the second background fill covered the tick labels. The duplicate draw has been removed.
+
 ## [1.5.1]
 
 ### Fixed

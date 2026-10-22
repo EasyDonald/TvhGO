@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.1
+- **Fix EPG time ruler being invisible**: a duplicated ruler-background draw at the end of onDraw painted over the tick labels
+- **Input streams show the raw ps** from /api/status/inputs again — the estimated value (sum of subscriptions on that input) and the “hold last value” smoothing were misleading and have been removed; a zero rate now shows —
+
 ## 1.5
 - EPG: removed the redundant “Now” button (refresh already reloads)
 - EPG timeline: proper time ruler (background band, hour ticks bold, 30-minute ticks) — previously it was hard to tell the actual time

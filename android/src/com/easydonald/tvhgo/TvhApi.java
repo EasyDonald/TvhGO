@@ -201,6 +201,30 @@ public class TvhApi {
         return out;
     }
 
+    /** 输入流 / 调谐器状态 */
+    public List<InputInfo> inputs() throws IOException {
+        List<InputInfo> out = new ArrayList<InputInfo>();
+        JSONArray arr = requestJson("/api/status/inputs?start=0&limit=200", "GET", null).optJSONArray("entries");
+        if (arr == null) return out;
+        for (int i = 0; i < arr.length(); i++) {
+            JSONObject o;
+            try {
+                o = arr.getJSONObject(i);
+            } catch (org.json.JSONException e) {
+                continue;
+            }
+            InputInfo in = new InputInfo();
+            in.uuid = o.optString("uuid");
+            in.input = o.optString("input");
+            in.stream = o.optString("stream");
+            in.subs = o.optInt("subs", 0);
+            in.signal = o.optInt("signal", 0);
+            in.snr = o.optInt("snr", 0);
+            out.add(in);
+        }
+        return out;
+    }
+
     /** 连接信息（状态页「连接」列表） */
     public static class ConnInfo {
         public long id;

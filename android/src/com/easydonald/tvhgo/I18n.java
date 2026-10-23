@@ -243,6 +243,8 @@ public class I18n {
         add("播放", "播放", "Play", "再生");
         add("播放该频道", "播放該頻道", "Play this channel", "このチャンネルを再生");
         add("日志", "日誌", "Logs", "ログ");
+        add("搜索", "搜尋", "search", "検索");
+        add("搜索录制（标题 / 频道）", "搜尋錄影（標題 / 頻道）", "Search recordings (title / channel)", "録画を検索（タイトル / チャンネル）");
         add("周日", "週日", "Sun", "日");
         add("周一", "週一", "Mon", "月");
         add("周二", "週二", "Tue", "火");

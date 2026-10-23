@@ -1743,7 +1743,8 @@ public class MainActivity extends Activity {
         });
         ImageLoader il = ImageLoader.get();
         addGroupRow(g6, tr("台标缓存"),
-                il.diskCount(this) + tr(" 个 · ") + fmtSize(il.diskBytes(this)),
+                il.diskCount(this) + tr(" 个 · ") + fmtSize(il.diskBytes(this))
+                        + (il.failCount() > 0 ? " · " + tr("失败") + " " + il.failCount() : ""),
                 new View.OnClickListener() {
                     public void onClick(View v) {
                         dlg().setTitle(tr("台标缓存"))
@@ -2110,11 +2111,17 @@ public class MainActivity extends Activity {
 
         final List<String> paths = new ArrayList<String>();
         for (Channel c : all) {
-            if (c.iconUrl != null && !c.iconUrl.isEmpty() && !ImageLoader.get().has(c.iconUrl)) {
-                paths.add(c.iconUrl);
-            }
+            String u = c.iconUrl;
+            if (!ImageLoader.usable(u)) continue;
+            if (ImageLoader.get().has(u) || ImageLoader.get().isFailed(u)) continue;
+            paths.add(u);
         }
-        if (paths.isEmpty()) return;
+        final int totalChannels = all.size();
+        if (paths.isEmpty()) {
+            AppLog.i("ICON", "台标：无需下载（频道 " + totalChannels + "，可用缓存 "
+                    + (ImageLoader.get().okCount()) + "）");
+            return;
+        }
 
         final java.util.concurrent.atomic.AtomicInteger finished =
                 new java.util.concurrent.atomic.AtomicInteger(0);
@@ -2131,7 +2138,9 @@ public class MainActivity extends Activity {
                     int f = finished.incrementAndGet();
                     if (f >= total) {
                         pool.shutdown();
-                        AppLog.i("ICON", "台标预加载完成：" + total + " 个");
+                        AppLog.i("ICON", "台标预加载完成：下载 " + total + " 个，成功 "
+                                + ImageLoader.get().okCount() + "，失败 " + ImageLoader.get().failCount()
+                                + "，跳过 " + ImageLoader.get().skipCount());
                         ui.post(new Runnable() {
                             public void run() {
                                 if (gen == iconGen && channelAdapter != null) {
@@ -2674,12 +2683,15 @@ public class MainActivity extends Activity {
                         ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
                 final String path = c.iconUrl == null ? "" : c.iconUrl;
                 iv.setTag(path);
-                if (!path.isEmpty()) {
+                iv.setImageDrawable(null);                 // 复用行先清空，避免残留上一个频道的图标
+                fallback.setVisibility(View.VISIBLE);
+                if (ImageLoader.usable(path) && !ImageLoader.get().isFailed(path)) {
                     ImageLoader.get().load(path, new ImageLoader.Callback() {
                         public void onLoaded(android.graphics.Bitmap bmp) {
                             if (path.equals(iv.getTag())) {
                                 iv.setImageBitmap(bmp);
                                 fallback.setVisibility(View.GONE);
+                                iv.setVisibility(View.VISIBLE);
                             }
                         }
                     });

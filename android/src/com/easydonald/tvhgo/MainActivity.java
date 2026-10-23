@@ -1237,8 +1237,42 @@ public class MainActivity extends Activity {
                     public void onClick(DialogInterface dlg, int which) {
                         if (which == 0) autoToggle(a, !a.enabled);
                         else if (which == 1) autoDelete(a);
+                        else showRuleDetail(a);
                     }
                 }).show();
+    }
+
+    /** 规则详情：完整字段 + 启用/停用、删除 */
+    private void showRuleDetail(final AutoRec a) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(tr("类型")).append("：").append(a.timerec ? tr("定时录制") : tr("自动录制")).append("\n");
+        sb.append(tr("名称")).append("：").append(a.name.isEmpty() ? "—" : a.name).append("\n");
+        if (!a.title.isEmpty()) sb.append(tr("标题")).append("：").append(a.title).append("\n");
+        if (!a.channelName.isEmpty()) sb.append(tr("频道")).append("：").append(a.channelName).append("\n");
+        if (!a.daysOfWeek.isEmpty()) sb.append(tr("星期")).append("：").append(a.daysOfWeek).append("\n");
+        if (a.start > 0) sb.append(tr("开始时间")).append("：").append(mdhm.format(new Date(a.start * 1000))).append("\n");
+        if (a.stop > 0) sb.append(tr("结束时间")).append("：").append(mdhm.format(new Date(a.stop * 1000))).append("\n");
+        if (a.directory != null && !a.directory.isEmpty()) {
+            sb.append(tr("目录")).append("：").append(a.directory).append("\n");
+        }
+        if (a.pri > 0) sb.append(tr("优先级")).append("：").append(a.pri).append("\n");
+        if (!a.comment.isEmpty()) sb.append(tr("备注")).append("：").append(a.comment).append("\n");
+        sb.append(tr("状态")).append("：").append(a.enabled ? tr("启用") : tr("停用"));
+        sb.append("\n\n").append(tr("规则 ID")).append("：").append(a.uuid);
+
+        dlg().setTitle(a.timerec ? tr("定时录制") : tr("自动录制"))
+                .setMessage(sb.toString())
+                .setPositiveButton(a.enabled ? tr("停用规则") : tr("启用规则"),
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface d, int w) {
+                                autoToggle(a, !a.enabled);
+                            }
+                        })
+                .setNeutralButton(tr("删除规则"), new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface d, int w) { autoDelete(a); }
+                })
+                .setNegativeButton(tr("关闭"), null)
+                .show();
     }
 
     private void autoToggle(final AutoRec a, final boolean enable) {

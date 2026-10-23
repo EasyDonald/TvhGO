@@ -5,6 +5,19 @@ All notable changes to TvhGO are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6]
+
+### Added
+- **Persistent picon cache**: channel icons are stored in the app cache directory (file name derived from the icon URL), so switching servers, refreshing, and restarting no longer re-download icons. A new settings entry shows the cache size and clears it on demand.
+- **Logs**: settings now offers *Tvheadend log* (live server log streamed over the Tvheadend comet channel, with debug level enabled while the page is open) and *App log* (recent client events: startup, server switches, channel loads, icon preloading, API errors). Both pages support copy-to-clipboard.
+
+### Fixed
+- Switching servers could leave the channel list empty or blocked: channel loading used a single-threaded executor, so a request against the previous server delayed the new one. Loading now runs on a small pool and stale responses are discarded through a generation counter.
+- Icon preloading is generation-based as well, so a preload from the previous server cannot block or overwrite the new server's icons.
+
+### Changed
+- Picon images are decoded to a maximum side of 96 px before being cached on disk and in memory.
+
 ## [1.5.5]
 
 ### Changed

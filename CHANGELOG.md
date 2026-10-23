@@ -5,6 +5,17 @@ All notable changes to TvhGO are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1]
+
+### Fixed
+- Channel icons: recycled rows kept the previous channel's icon; the image view is now cleared and the channel-number placeholder restored on every bind.
+- Icons: values that cannot be fetched (`"1"`, `file://` paths) are skipped instead of being requested on every load.
+- Icons: failed URLs are remembered for the session, so preloading completes instead of retrying broken entries indefinitely.
+- Icons: the cache key is the absolute URL, so relative entries such as `imagecache/41` no longer collide between two servers.
+
+### Added
+- Settings → picon cache shows the number of cached icons, the size and the failure count; the app log records how many icons were downloaded, cached, failed and skipped.
+
 ## [1.6]
 
 ### Added

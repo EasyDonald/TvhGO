@@ -303,7 +303,7 @@ public class ChannelDetailActivity extends Activity {
         dayTabs.removeAllViews();
         for (final String d : days) {
             boolean sel = d.equals(selectedDay);
-            String label = dayLabel(d) + " (" + counts.get(d) + ")";
+            String label = dayLabel(d) + " (" + weekdayLabel(d) + ")";
             TextView tab = text(label, 12, sel ? ACCENT : DIM, true);
             tab.setPadding(dp(14), dp(7), dp(14), dp(7));
             tab.setBackground(sel ? roundBg(0x2626C6DA, 18, false) : null);
@@ -329,7 +329,7 @@ public class ChannelDetailActivity extends Activity {
         dayTabs.removeAllViews();
         for (final String d : days) {
             boolean sel = d.equals(selectedDay);
-            String label = dayLabel(d) + " (" + counts.get(d) + ")";
+            String label = dayLabel(d) + " (" + weekdayLabel(d) + ")";
             TextView tab = text(label, 13, sel ? ACCENT : DIM, true);
             tab.setPadding(dp(12), dp(8), dp(12), dp(8));
             tab.setOnClickListener(new View.OnClickListener() {
@@ -340,6 +340,25 @@ public class ChannelDetailActivity extends Activity {
                 }
             });
             dayTabs.addView(tab);
+        }
+    }
+
+    /** 周几（按界面语言） */
+    private String weekdayLabel(String d) {
+        try {
+            java.util.Calendar c = java.util.Calendar.getInstance();
+            c.setTime(dayFmt.parse(d));
+            switch (c.get(java.util.Calendar.DAY_OF_WEEK)) {
+                case java.util.Calendar.SUNDAY: return tr("周日");
+                case java.util.Calendar.MONDAY: return tr("周一");
+                case java.util.Calendar.TUESDAY: return tr("周二");
+                case java.util.Calendar.WEDNESDAY: return tr("周三");
+                case java.util.Calendar.THURSDAY: return tr("周四");
+                case java.util.Calendar.FRIDAY: return tr("周五");
+                default: return tr("周六");
+            }
+        } catch (Exception e) {
+            return "";
         }
     }
 

@@ -243,6 +243,13 @@ public class I18n {
         add("播放", "播放", "Play", "再生");
         add("播放该频道", "播放該頻道", "Play this channel", "このチャンネルを再生");
         add("日志", "日誌", "Logs", "ログ");
+        add("周日", "週日", "Sun", "日");
+        add("周一", "週一", "Mon", "月");
+        add("周二", "週二", "Tue", "火");
+        add("周三", "週三", "Wed", "水");
+        add("周四", "週四", "Thu", "木");
+        add("周五", "週五", "Fri", "金");
+        add("周六", "週六", "Sat", "土");
         add("Tvheadend 日志", "Tvheadend 日誌", "Tvheadend log", "Tvheadend ログ");
         add("App 日志", "App 日誌", "App log", "アプリログ");
         add("实时", "即時", "live", "リアルタイム");

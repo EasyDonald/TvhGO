@@ -244,6 +244,10 @@ public class I18n {
         add("播放该频道", "播放該頻道", "Play this channel", "このチャンネルを再生");
         add("日志", "日誌", "Logs", "ログ");
         add("搜索", "搜尋", "search", "検索");
+        add("类型", "類型", "Type", "種類");
+        add("目录", "目錄", "Directory", "ディレクトリ");
+        add("优先级", "優先級", "Priority", "優先度");
+        add("规则 ID", "規則 ID", "Rule ID", "ルール ID");
         add("搜索录制（标题 / 频道）", "搜尋錄影（標題 / 頻道）", "Search recordings (title / channel)", "録画を検索（タイトル / チャンネル）");
         add("周日", "週日", "Sun", "日");
         add("周一", "週一", "Mon", "月");

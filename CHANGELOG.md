@@ -5,6 +5,11 @@ All notable changes to TvhGO are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.1]
+
+### Fixed
+- Autorec / Timerec: the “Details” action of a rule did nothing. It now opens a detail sheet with type, name, title, channel, weekdays, start and stop time, directory, priority, comment, rule ID, and buttons to enable/disable or delete the rule.
+
 ## [1.7]
 
 ### Added

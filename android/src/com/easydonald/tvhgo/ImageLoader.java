@@ -37,6 +37,10 @@ public class ImageLoader {
 
     private static ImageLoader instance;
 
+    private final java.util.Set<String> failed =
+            java.util.Collections.synchronizedSet(new java.util.HashSet<String>());
+    private int okCount = 0, failCount = 0, skipCount = 0;
+
     private final Map<String, Bitmap> cache = new LinkedHashMap<String, Bitmap>(MAX_CACHE, 0.75f, true) {
         protected boolean removeEldestEntry(Map.Entry<String, Bitmap> eldest) {
             return size() > MAX_CACHE;
@@ -82,39 +86,80 @@ public class ImageLoader {
         return a == null ? b == null : a.equals(b);
     }
 
+    /** 地址是否可尝试加载（"1"、file:// 这类无效值直接跳过） */
+    public static boolean usable(String path) {
+        if (path == null) return false;
+        String p = path.trim();
+        if (p.isEmpty() || !p.contains("/")) return false;
+        if (p.startsWith("file://")) return false;
+        return true;
+    }
+
+    public boolean isFailed(String path) {
+        return path != null && failed.contains(key(path));
+    }
+
+    public int okCount() { return okCount; }
+
+    public int failCount() { return failCount; }
+
+    public int skipCount() { return skipCount; }
+
+    /** 缓存键：相对地址补全为绝对地址，避免不同服务器同名相对路径串味 */
+    public String key(String path) {
+        if (path == null) return "";
+        if (path.startsWith("http")) return path;
+        return base + "/" + path;
+    }
+
     public boolean has(String path) {
         if (path == null || path.isEmpty()) return false;
+        String k = key(path);
         synchronized (cache) {
-            if (cache.containsKey(path)) return true;
+            if (cache.containsKey(k)) return true;
         }
-        File f = diskFile(path);
+        File f = diskFile(k);
         return f != null && f.exists() && f.length() > 0;
     }
 
     /** 同步获取（内存 → 磁盘 → 网络），供预加载使用 */
     public Bitmap fetch(String path) {
-        if (path == null || path.isEmpty()) return null;
+        if (!usable(path)) {
+            skipCount++;
+            return null;
+        }
+        final String k = key(path);
+        if (failed.contains(k)) return null;
         synchronized (cache) {
-            Bitmap c = cache.get(path);
+            Bitmap c = cache.get(k);
             if (c != null) return c;
         }
-        Bitmap bmp = readDisk(path);
+        Bitmap bmp = readDisk(k);
         if (bmp == null) {
             bmp = download(path);
-            if (bmp != null) writeDisk(path, bmp);
+            if (bmp != null) {
+                writeDisk(k, bmp);
+                okCount++;
+            } else {
+                failed.add(k);
+                failCount++;
+                return null;
+            }
         }
         if (bmp != null) {
             synchronized (cache) {
-                cache.put(path, bmp);
+                cache.put(k, bmp);
             }
         }
         return bmp;
     }
 
     public void load(final String path, final Callback cb) {
-        if (path == null || path.isEmpty()) return;
+        if (!usable(path)) return;
+        final String k = key(path);
+        if (failed.contains(k)) return;
         synchronized (cache) {
-            Bitmap cached = cache.get(path);
+            Bitmap cached = cache.get(k);
             if (cached != null) {
                 cb.onLoaded(cached);
                 return;
@@ -199,6 +244,8 @@ public class ImageLoader {
         synchronized (cache) {
             cache.clear();
         }
+        failed.clear();
+        okCount = failCount = skipCount = 0;
         File dir = new File(ctx.getCacheDir(), "picons");
         File[] files = dir.listFiles();
         if (files != null) {

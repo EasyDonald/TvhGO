@@ -115,6 +115,11 @@ public class MainActivity extends Activity {
     private LinearLayout dvrTabsBox;
     private final List<TextView> dvrTabViews = new ArrayList<TextView>();
     private final List<AutoRec> recItems = new ArrayList<AutoRec>();
+    /** 搜索后的显示列表 */
+    private final List<DvrEntry> dvrShown = new ArrayList<DvrEntry>();
+    private final List<AutoRec> recShown = new ArrayList<AutoRec>();
+    private String dvrQuery = "";
+    private String dvrStatusBase = "";
     private AutoRecAdapter autoAdapter;
     private ListView dvrList;
     private DvrAdapter dvrAdapter;
@@ -331,6 +336,9 @@ public class MainActivity extends Activity {
         if (statusLine != null) statusLine.setText("");
         if (dvrItems != null) {
             dvrItems.clear();
+            dvrShown.clear();
+            recItems.clear();
+            recShown.clear();
             if (dvrAdapter != null) dvrAdapter.notifyDataSetChanged();
         }
     }
@@ -869,6 +877,42 @@ public class MainActivity extends Activity {
         setDvrTab(0);
         v.addView(filterWrap);
 
+        LinearLayout searchWrap = new LinearLayout(this);
+        searchWrap.setPadding(dp(14), 0, dp(14), dp(6));
+        final EditText dvrSearch = new EditText(this);
+        dvrSearch.setHint(tr("搜索录制（标题 / 频道）"));
+        dvrSearch.setHintTextColor(DIM);
+        dvrSearch.setTextColor(TEXT);
+        dvrSearch.setSingleLine(true);
+        dvrSearch.setTextSize(14);
+        dvrSearch.setBackground(roundBg(CARD, 14));
+        dvrSearch.setPadding(dp(14), dp(9), dp(10), dp(9));
+        dvrSearch.setCompoundDrawablePadding(dp(6));
+        dvrSearch.addTextChangedListener(new TextWatcher() {
+            public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
+            public void onTextChanged(CharSequence s, int a, int b, int c) {
+                dvrQuery = s.toString().trim();
+                applyDvrFilter();
+                dvrSearch.setCompoundDrawablesWithIntrinsicBounds(0, 0,
+                        s.length() > 0 ? R.drawable.ic_clear : 0, 0);
+            }
+            public void afterTextChanged(Editable s) {}
+        });
+        dvrSearch.setOnTouchListener(new View.OnTouchListener() {
+            public boolean onTouch(View v, android.view.MotionEvent e) {
+                if (e.getAction() == android.view.MotionEvent.ACTION_UP
+                        && !dvrSearch.getText().toString().isEmpty()
+                        && e.getX() >= dvrSearch.getWidth() - dvrSearch.getPaddingRight() - dp(28)) {
+                    dvrSearch.setText("");
+                    return true;
+                }
+                return false;
+            }
+        });
+        searchWrap.addView(dvrSearch, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        v.addView(searchWrap);
+
         dvrList = new ListView(this);
         dvrList.setDividerHeight(1);
         dvrList.setDivider(new android.graphics.drawable.ColorDrawable(LINE));
@@ -880,9 +924,9 @@ public class MainActivity extends Activity {
         dvrList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             public void onItemClick(AdapterView<?> p, View view, int pos, long id) {
                 if (dvrTab >= 4) {
-                    if (pos >= 0 && pos < recItems.size()) autoRecMenu(recItems.get(pos));
-                } else if (pos >= 0 && pos < dvrItems.size()) {
-                    dvrMenu(dvrItems.get(pos));
+                    if (pos >= 0 && pos < recShown.size()) autoRecMenu(recShown.get(pos));
+                } else if (pos >= 0 && pos < dvrShown.size()) {
+                    dvrMenu(dvrShown.get(pos));
                 }
             }
         });
@@ -963,7 +1007,8 @@ public class MainActivity extends Activity {
                             } else {
                                 extra = "  ·  " + list.size() + tr(" 条");
                             }
-                            dvrStatus.setText(names[tab] + extra);
+                            dvrStatusBase = names[tab] + extra;
+                            applyDvrFilter();
                         }
                     });
                 } catch (final Exception e) {
@@ -2295,6 +2340,41 @@ public class MainActivity extends Activity {
     }
 
     /** 录制页切换分类 */
+    /** 按搜索词过滤当前分类并刷新计数 */
+    private void applyDvrFilter() {
+        String q = dvrQuery == null ? "" : dvrQuery.toLowerCase();
+        dvrShown.clear();
+        recShown.clear();
+        if (q.isEmpty()) {
+            dvrShown.addAll(dvrItems);
+            recShown.addAll(recItems);
+        } else {
+            for (DvrEntry d : dvrItems) {
+                String hay = (nullSafe(d.title) + " " + nullSafe(d.channelName) + " "
+                        + nullSafe(d.status) + " " + nullSafe(d.schedStatus)).toLowerCase();
+                if (hay.contains(q)) dvrShown.add(d);
+            }
+            for (AutoRec a : recItems) {
+                String hay = (nullSafe(a.name) + " " + nullSafe(a.title) + " "
+                        + nullSafe(a.channelName) + " " + nullSafe(a.daysOfWeek)).toLowerCase();
+                if (hay.contains(q)) recShown.add(a);
+            }
+        }
+        if (dvrAdapter != null) dvrAdapter.notifyDataSetChanged();
+        if (autoAdapter != null) autoAdapter.notifyDataSetChanged();
+        if (dvrStatus != null) {
+            int n = dvrTab >= 4 ? recShown.size() : dvrShown.size();
+            int totalN = dvrTab >= 4 ? recItems.size() : dvrItems.size();
+            String base = dvrStatusBase;
+            if (!q.isEmpty()) base = base + "  ·  " + tr("搜索") + " " + n + "/" + totalN;
+            dvrStatus.setText(base);
+        }
+    }
+
+    private String nullSafe(String s) {
+        return s == null ? "" : s;
+    }
+
     private void setDvrTab(int idx) {
         dvrTab = idx;
         for (int i = 0; i < dvrTabViews.size(); i++) {
@@ -2311,6 +2391,7 @@ public class MainActivity extends Activity {
                 dvrList.setAdapter(dvrAdapter);
             }
         }
+        applyDvrFilter();
         if (dvrLoaded) loadDvr();
     }
 
@@ -2737,14 +2818,14 @@ public class MainActivity extends Activity {
     private final SimpleDateFormat mdhm = new SimpleDateFormat("MM-dd HH:mm", Locale.CHINA);
 
     private class AutoRecAdapter extends BaseAdapter {
-        public int getCount() { return recItems.size(); }
+        public int getCount() { return recShown.size(); }
 
-        public Object getItem(int i) { return recItems.get(i); }
+        public Object getItem(int i) { return recShown.get(i); }
 
         public long getItemId(int i) { return i; }
 
         public View getView(int pos, View convert, ViewGroup parent) {
-            AutoRec a = recItems.get(pos);
+            AutoRec a = recShown.get(pos);
             LinearLayout row = new LinearLayout(MainActivity.this);
             row.setOrientation(LinearLayout.VERTICAL);
             row.setPadding(dp(18), dp(13), dp(14), dp(13));
@@ -2781,12 +2862,12 @@ public class MainActivity extends Activity {
     }
 
     private class DvrAdapter extends BaseAdapter {
-        public int getCount() { return dvrItems.size(); }
-        public Object getItem(int i) { return dvrItems.get(i); }
+        public int getCount() { return dvrShown.size(); }
+        public Object getItem(int i) { return dvrShown.get(i); }
         public long getItemId(int i) { return i; }
 
         public View getView(int pos, View convert, ViewGroup parent) {
-            DvrEntry d = dvrItems.get(pos);
+            DvrEntry d = dvrShown.get(pos);
             LinearLayout row = new LinearLayout(MainActivity.this);
             row.setOrientation(LinearLayout.VERTICAL);
             row.setPadding(dp(18), dp(13), dp(14), dp(13));

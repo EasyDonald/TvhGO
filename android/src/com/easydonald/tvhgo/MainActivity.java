@@ -62,6 +62,9 @@ public class MainActivity extends Activity {
     private final Handler ui = new Handler(Looper.getMainLooper());
 
     private final List<Channel> all = new ArrayList<Channel>();
+    /** 台标预加载状态：避免同一台服务器重复预载 */
+    private String iconsPreloadedKey = "";
+    private volatile boolean iconsPreloading = false;
     private final List<Channel> shown = new ArrayList<Channel>();
     private Map<String, String> tagNames = new LinkedHashMap<String, String>();
     private String query = "";
@@ -314,6 +317,7 @@ public class MainActivity extends Activity {
         shown.clear();
         tagNames.clear();
         spinnerKeys.clear();
+        iconsPreloadedKey = "";
         statusLoaded = epgLoaded = dvrLoaded = false;
         dvrConfigList = null;
         streamProfiles = null;
@@ -1689,6 +1693,7 @@ public class MainActivity extends Activity {
                                 prefs.showIcons = (which == 1);
                                 prefs.save(MainActivity.this);
                                 channelAdapter.notifyDataSetChanged();
+                            preloadIcons();
                                 refreshSettingsTab();
                             }
                         }).show();
@@ -2057,6 +2062,63 @@ public class MainActivity extends Activity {
     /** 拉取“全频道正在播”用于副标题 */
     private final Map<String, String> nowPlaying = new LinkedHashMap<String, String>();
 
+    /** 一次性预加载所有频道台标（滚动时不再逐个下载） */
+    private void preloadIcons() {
+        if (!prefs.showIcons) return;
+        if (iconsPreloading) return;
+        final String key = prefs.base() + "#" + all.size() + "#" + prefs.showIcons;
+        if (key.equals(iconsPreloadedKey)) return;
+        iconsPreloadedKey = key;
+        iconsPreloading = true;
+
+        final List<String> paths = new ArrayList<String>();
+        for (Channel c : all) {
+            if (c.iconUrl != null && !c.iconUrl.isEmpty() && !ImageLoader.get().has(c.iconUrl)) {
+                paths.add(c.iconUrl);
+            }
+        }
+        if (paths.isEmpty()) {
+            iconsPreloading = false;
+            return;
+        }
+
+        final java.util.concurrent.atomic.AtomicInteger done =
+                new java.util.concurrent.atomic.AtomicInteger(0);
+        final java.util.concurrent.atomic.AtomicInteger finished =
+                new java.util.concurrent.atomic.AtomicInteger(0);
+        final int total = paths.size();
+        final java.util.concurrent.ExecutorService pool =
+                java.util.concurrent.Executors.newFixedThreadPool(4);
+
+        for (final String path : paths) {
+            pool.execute(new Runnable() {
+                public void run() {
+                    ImageLoader.get().fetch(path);
+                    int d = done.incrementAndGet();
+                    int f = finished.incrementAndGet();
+                    if (f >= total) {
+                        pool.shutdown();
+                        iconsPreloading = false;
+                        ui.post(new Runnable() {
+                            public void run() {
+                                if (channelAdapter != null) channelAdapter.notifyDataSetChanged();
+                            }
+                        });
+                        return;
+                    }
+                    // 每完成 25 个刷新一次可见行
+                    if (d % 25 == 0) {
+                        ui.post(new Runnable() {
+                            public void run() {
+                                if (tab == TAB_CH && channelAdapter != null) channelAdapter.notifyDataSetChanged();
+                            }
+                        });
+                    }
+                }
+            });
+        }
+    }
+
     private void loadNowPlaying() {
         bg.execute(new Runnable() {
             public void run() {
@@ -2134,6 +2196,7 @@ public class MainActivity extends Activity {
                             progress.setVisibility(View.GONE);
                             epgLoaded = false;
                             dvrConfigList = null;
+                            preloadIcons();
                             if (prefs.subtitleMode == 1) loadNowPlaying();
                         }
                     });

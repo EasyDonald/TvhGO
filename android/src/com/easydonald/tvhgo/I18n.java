@@ -242,6 +242,18 @@ public class I18n {
         add("结束时间", "結束時間", "Stop time", "終了");
         add("播放", "播放", "Play", "再生");
         add("播放该频道", "播放該頻道", "Play this channel", "このチャンネルを再生");
+        add("日志", "日誌", "Logs", "ログ");
+        add("Tvheadend 日志", "Tvheadend 日誌", "Tvheadend log", "Tvheadend ログ");
+        add("App 日志", "App 日誌", "App log", "アプリログ");
+        add("实时", "即時", "live", "リアルタイム");
+        add("台标缓存", "台標快取", "Picon cache", "アイコンキャッシュ");
+        add("清空", "清除", "Clear", "クリア");
+        add("已清空台标缓存", "已清除台標快取", "Picon cache cleared", "アイコンキャッシュを削除しました");
+        add("清空后下次进入频道页会重新下载台标，确定？", "清除後下次進入頻道頁會重新下載台標，確定？", "Picons will be downloaded again on the next visit. Continue?", "次回チャンネル画面で再取得します。よろしいですか？");
+        add("复制", "複製", "Copy", "コピー");
+        add("已连接，显示服务端实时日志（仅包含打开本页之后产生的记录）", "已連線，顯示伺服器即時日誌（僅包含開啟本頁之後產生的記錄）", "Connected. Showing live server log (only entries produced while this page is open).", "接続済み。開いている間のログのみ表示します。");
+        add("与 Tvheadend 的日志通道断开，正在重连…", "與 Tvheadend 的日誌通道中斷，正在重新連線…", "Log channel disconnected, reconnecting…", "ログ接続が切断されました。再接続中…");
+        add("已重新连接", "已重新連線", "Reconnected", "再接続しました");
         add("没有找到匹配的连接", "找不到符合的連線", "No matching connection", "一致する接続なし");
         add("复制串流链接", "複製串流連結", "Copy stream URL", "URLをコピー");
         add("选择播放器", "選擇播放器", "Choose player", "プレーヤー選択");

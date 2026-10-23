@@ -5,6 +5,11 @@ All notable changes to TvhGO are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.5]
+
+### Changed
+- Channel picons are preloaded for the whole list in the background instead of being fetched while scrolling. Loading runs with four concurrent requests, refreshes the visible rows every 25 icons, and completes within a few seconds on a local server. Images are downscaled to 96 px before caching and the cache holds the full channel list.
+
 ## [1.5.4]
 
 ### Added

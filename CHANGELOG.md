@@ -5,6 +5,11 @@ All notable changes to TvhGO are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7]
+
+### Added
+- **Recording search**: a search field above the DVR list filters the current category by recording title, channel name and status; autorec and timerec rules are matched against name, title, channel and weekdays. The header shows how many entries match (search N/M), the field has an inline clear button and the filter is re-applied when switching category.
+
 ## [1.6.2]
 
 ### Changed

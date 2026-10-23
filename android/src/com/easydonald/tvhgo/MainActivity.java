@@ -58,13 +58,15 @@ public class MainActivity extends Activity {
 
     private Prefs prefs;
     private TvhApi api;
-    private final ExecutorService bg = Executors.newSingleThreadExecutor();
+    private final ExecutorService bg = Executors.newFixedThreadPool(3);
     private final Handler ui = new Handler(Looper.getMainLooper());
 
     private final List<Channel> all = new ArrayList<Channel>();
     /** 台标预加载状态：避免同一台服务器重复预载 */
     private String iconsPreloadedKey = "";
-    private volatile boolean iconsPreloading = false;
+    /** 频道加载代际：切换服务器后丢弃旧请求的结果 */
+    private volatile int loadGen = 0;
+    private volatile int iconGen = 0;
     private final List<Channel> shown = new ArrayList<Channel>();
     private Map<String, String> tagNames = new LinkedHashMap<String, String>();
     private String query = "";
@@ -131,6 +133,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         prefs = Prefs.load(this);
         I18n.setLang(prefs.lang);
+        AppLog.i("APP", "启动 TvhGO，配置：" + prefs.cur().name);
         Theme.apply(prefs.themeMode, isSystemNight(this));
         getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(Theme.BG));
         api = TvhApi.from(prefs);
@@ -318,6 +321,9 @@ public class MainActivity extends Activity {
         tagNames.clear();
         spinnerKeys.clear();
         iconsPreloadedKey = "";
+        iconGen++;
+        loadGen++;
+        if (progress != null) progress.setVisibility(View.GONE);
         statusLoaded = epgLoaded = dvrLoaded = false;
         dvrConfigList = null;
         streamProfiles = null;
@@ -1727,6 +1733,38 @@ public class MainActivity extends Activity {
         });
         settingsContent.addView(pad(g4));
 
+        settingsContent.addView(groupTitle(tr("日志")));
+        LinearLayout g6 = cardGroup();
+        addGroupRow(g6, tr("Tvheadend 日志"), tr("实时"), new View.OnClickListener() {
+            public void onClick(View v) { openLogActivity(true); }
+        });
+        addGroupRow(g6, tr("App 日志"), "", new View.OnClickListener() {
+            public void onClick(View v) { openLogActivity(false); }
+        });
+        ImageLoader il = ImageLoader.get();
+        addGroupRow(g6, tr("台标缓存"),
+                il.diskCount(this) + tr(" 个 · ") + fmtSize(il.diskBytes(this)),
+                new View.OnClickListener() {
+                    public void onClick(View v) {
+                        dlg().setTitle(tr("台标缓存"))
+                                .setMessage(tr("清空后下次进入频道页会重新下载台标，确定？"))
+                                .setPositiveButton(tr("清空"), new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface d, int w) {
+                                        ImageLoader.get().clearDisk(MainActivity.this);
+                                        iconsPreloadedKey = "";
+                                        iconGen++;
+                                        AppLog.i("ICON", "已清空台标缓存");
+                                        toast(tr("已清空台标缓存"));
+                                        preloadIcons();
+                                        refreshSettingsTab();
+                                    }
+                                })
+                                .setNegativeButton(tr("取消"), null)
+                                .show();
+                    }
+                });
+        settingsContent.addView(pad(g6));
+
         settingsContent.addView(groupTitle(tr("其它")));
         LinearLayout g5 = cardGroup();
         addGroupRow(g5, tr("打开 Tvheadend 网页后台"), "", new View.OnClickListener() {
@@ -2065,11 +2103,10 @@ public class MainActivity extends Activity {
     /** 一次性预加载所有频道台标（滚动时不再逐个下载） */
     private void preloadIcons() {
         if (!prefs.showIcons) return;
-        if (iconsPreloading) return;
-        final String key = prefs.base() + "#" + all.size() + "#" + prefs.showIcons;
+        final String key = prefs.base() + "#" + all.size() + "#" + prefs.user;
         if (key.equals(iconsPreloadedKey)) return;
         iconsPreloadedKey = key;
-        iconsPreloading = true;
+        final int gen = ++iconGen;
 
         final List<String> paths = new ArrayList<String>();
         for (Channel c : all) {
@@ -2077,13 +2114,8 @@ public class MainActivity extends Activity {
                 paths.add(c.iconUrl);
             }
         }
-        if (paths.isEmpty()) {
-            iconsPreloading = false;
-            return;
-        }
+        if (paths.isEmpty()) return;
 
-        final java.util.concurrent.atomic.AtomicInteger done =
-                new java.util.concurrent.atomic.AtomicInteger(0);
         final java.util.concurrent.atomic.AtomicInteger finished =
                 new java.util.concurrent.atomic.AtomicInteger(0);
         final int total = paths.size();
@@ -2093,24 +2125,28 @@ public class MainActivity extends Activity {
         for (final String path : paths) {
             pool.execute(new Runnable() {
                 public void run() {
+                    if (gen != iconGen) return;      // 服务器已切换，旧任务直接退出
                     ImageLoader.get().fetch(path);
-                    int d = done.incrementAndGet();
+                    if (gen != iconGen) return;
                     int f = finished.incrementAndGet();
                     if (f >= total) {
                         pool.shutdown();
-                        iconsPreloading = false;
+                        AppLog.i("ICON", "台标预加载完成：" + total + " 个");
                         ui.post(new Runnable() {
                             public void run() {
-                                if (channelAdapter != null) channelAdapter.notifyDataSetChanged();
+                                if (gen == iconGen && channelAdapter != null) {
+                                    channelAdapter.notifyDataSetChanged();
+                                }
                             }
                         });
                         return;
                     }
-                    // 每完成 25 个刷新一次可见行
-                    if (d % 25 == 0) {
+                    if (f % 25 == 0) {
                         ui.post(new Runnable() {
                             public void run() {
-                                if (tab == TAB_CH && channelAdapter != null) channelAdapter.notifyDataSetChanged();
+                                if (gen == iconGen && tab == TAB_CH && channelAdapter != null) {
+                                    channelAdapter.notifyDataSetChanged();
+                                }
                             }
                         });
                     }
@@ -2157,9 +2193,11 @@ public class MainActivity extends Activity {
     }
 
     private void loadChannels() {
-        ImageLoader.get().configure(api.base, prefs.user, prefs.pass);
+        ImageLoader.get().configure(this, api.base, prefs.user, prefs.pass);
+        final int gen = ++loadGen;
         progress.setVisibility(View.VISIBLE);
         statusLine.setText(tr("正在连接…"));
+        AppLog.i("API", "加载频道 " + prefs.base());
         bg.execute(new Runnable() {
             public void run() {
                 try {
@@ -2187,6 +2225,8 @@ public class MainActivity extends Activity {
                     }
                     ui.post(new Runnable() {
                         public void run() {
+                            if (gen != loadGen) return;
+                            AppLog.i("API", "频道加载完成：" + chs.size() + " 个频道 / " + tags.size() + " 个分组");
                             serverInfo = info;
                             tagNames = tags;
                             all.clear();
@@ -2201,8 +2241,10 @@ public class MainActivity extends Activity {
                         }
                     });
                 } catch (final Exception e) {
+                    AppLog.i("API", "频道加载失败：" + e.getMessage());
                     ui.post(new Runnable() {
                         public void run() {
+                            if (gen != loadGen) return;
                             progress.setVisibility(View.GONE);
                             statusLine.setText(tr("连接失败：") + e.getMessage());
                             toast(e.getMessage());
@@ -2400,6 +2442,17 @@ public class MainActivity extends Activity {
                 .show();
     }
 
+    private void openLogActivity(boolean server) {
+        try {
+            Intent i = new Intent(this, LogActivity.class);
+            i.putExtra(LogActivity.EXTRA_SOURCE,
+                    server ? LogActivity.SOURCE_SERVER : LogActivity.SOURCE_APP);
+            startActivity(i);
+        } catch (Exception e) {
+            toast(e.getMessage());
+        }
+    }
+
     private void openWebUi() {
         try {
             String url = prefs.base();
@@ -2474,6 +2527,7 @@ public class MainActivity extends Activity {
         api = TvhApi.from(prefs);
         resetData();
         updateTitle();
+        AppLog.i("CONF", "切换到配置：" + prefs.cur().name + " (" + prefs.base() + ")");
         toast(tr("已切换到配置：") + prefs.cur().name);
         switchTab(TAB_CH);
         loadChannels();

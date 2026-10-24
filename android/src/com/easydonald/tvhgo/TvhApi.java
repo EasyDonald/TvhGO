@@ -443,6 +443,8 @@ public class TvhApi {
                 d.stopExtra = o.optInt("stop_extra", 0);
                 d.enabled = o.optBoolean("enabled", true);
                 d.state = o.optString("state", "");
+                d.owner = o.optString("owner", "");
+                d.creator = o.optString("creator", "");
                 out.add(d);
             }
             start += arr.length();
@@ -533,6 +535,8 @@ public class TvhApi {
                     a.pri = o.optInt("pri", 0);
                     a.daysOfWeek = o.optString("days_of_week");
                     a.timerec = timerec;
+                    a.owner = o.optString("owner", "");
+                    a.creator = o.optString("creator", "");
                     out.add(a);
                 } catch (org.json.JSONException ignored) {
                 }

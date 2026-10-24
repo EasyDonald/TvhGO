@@ -5,6 +5,12 @@ All notable changes to TvhGO are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.2]
+
+### Added
+- Recording lists (upcoming, inished, ailed, 
+emoved) and the autorec / timerec lists now show the creator of each entry (owner / creator from the Tvheadend API). The rule detail sheet and the recording editor show it as well.
+
 ## [1.7.1]
 
 ### Fixed

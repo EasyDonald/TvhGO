@@ -63,6 +63,8 @@ class DvrEntry {
     int stopExtra;
     boolean enabled = true;
     String state = "";
+    String owner = "";
+    String creator = "";
 }
 
 /** 自动录制 / 定时录制规则 */
@@ -80,4 +82,6 @@ class AutoRec {
     int pri;
     String daysOfWeek = "";
     boolean timerec;
+    String owner = "";
+    String creator = "";
 }

@@ -245,6 +245,7 @@ public class I18n {
         add("日志", "日誌", "Logs", "ログ");
         add("搜索", "搜尋", "search", "検索");
         add("类型", "類型", "Type", "種類");
+        add("创建者", "建立者", "Created by", "作成者");
         add("目录", "目錄", "Directory", "ディレクトリ");
         add("优先级", "優先級", "Priority", "優先度");
         add("规则 ID", "規則 ID", "Rule ID", "ルール ID");

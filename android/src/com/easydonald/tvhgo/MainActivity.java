@@ -1091,6 +1091,11 @@ public class MainActivity extends Activity {
         title.setText(d.title);
         box.addView(text(tr("标题"), 12, DIM, false));
         box.addView(title);
+        String ec = (d.creator == null || d.creator.trim().isEmpty())
+                ? (d.owner == null ? "" : d.owner.trim()) : d.creator.trim();
+        if (!ec.isEmpty()) {
+            box.addView(text(tr("创建者") + "：" + ec, 11, DIM, false));
+        }
 
         final SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.CHINA);
         final long[] startMs = {d.start * 1000L};
@@ -1257,6 +1262,9 @@ public class MainActivity extends Activity {
         }
         if (a.pri > 0) sb.append(tr("优先级")).append("：").append(a.pri).append("\n");
         if (!a.comment.isEmpty()) sb.append(tr("备注")).append("：").append(a.comment).append("\n");
+        String rc = (a.creator == null || a.creator.trim().isEmpty())
+                ? (a.owner == null ? "" : a.owner.trim()) : a.creator.trim();
+        if (!rc.isEmpty()) sb.append(tr("创建者")).append("：").append(rc).append("\n");
         sb.append(tr("状态")).append("：").append(a.enabled ? tr("启用") : tr("停用"));
         sb.append("\n\n").append(tr("规则 ID")).append("：").append(a.uuid);
 
@@ -2890,6 +2898,12 @@ public class MainActivity extends Activity {
                 if (meta.length() > 0) meta.append("  ·  ");
                 meta.append(mdhm.format(new Date(a.start * 1000)));
             }
+            String creator = a.creator == null ? "" : a.creator.trim();
+            if (creator.isEmpty() && a.owner != null) creator = a.owner.trim();
+            if (!creator.isEmpty()) {
+                if (meta.length() > 0) meta.append("  ·  ");
+                meta.append(tr("创建者")).append(" ").append(creator);
+            }
             if (meta.length() > 0) row.addView(text(meta.toString(), 11, DIM, false));
             return row;
         }
@@ -2933,6 +2947,12 @@ public class MainActivity extends Activity {
                 String st = d.schedStatus.isEmpty() ? d.status : d.schedStatus;
                 if (st != null && !st.isEmpty()) meta.append("  ·  ").append(st);
                 if (d.autorec != null && !d.autorec.isEmpty()) meta.append("  ·  ").append(tr("自动录制"));
+            }
+            String creator = d.creator == null ? "" : d.creator.trim();
+            if (creator.isEmpty() && d.owner != null) creator = d.owner.trim();
+            if (!creator.isEmpty()) {
+                if (meta.length() > 0) meta.append("  ·  ");
+                meta.append(tr("创建者")).append(" ").append(creator);
             }
             row.addView(text(meta.toString(), 11, DIM, false));
             return row;

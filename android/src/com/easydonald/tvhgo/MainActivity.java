@@ -325,6 +325,8 @@ public class MainActivity extends Activity {
         shown.clear();
         tagNames.clear();
         spinnerKeys.clear();
+        tagFilter = null;          // 旧服务器的分组在新服务器上不存在，必须清空
+        tagLabels.clear();
         iconsPreloadedKey = "";
         iconGen++;
         loadGen++;
@@ -334,6 +336,7 @@ public class MainActivity extends Activity {
         streamProfiles = null;
         if (channelAdapter != null) channelAdapter.notifyDataSetChanged();
         if (statusLine != null) statusLine.setText("");
+        if (tagPicker != null) tagPicker.setText(tr("全部频道"));
         if (dvrItems != null) {
             dvrItems.clear();
             dvrShown.clear();
@@ -2443,7 +2446,7 @@ public class MainActivity extends Activity {
         for (Channel c : all) {
             String name = String.valueOf(c.name);
             if (!q.isEmpty() && !name.toLowerCase().contains(q) && !String.valueOf(c.number).contains(q)) continue;
-            if (tagFilter != null && !c.tags.contains(tagFilter)) continue;
+            if (tagFilter != null && tagNames.containsKey(tagFilter) && !c.tags.contains(tagFilter)) continue;
             shown.add(c);
         }
         if (channelAdapter != null) channelAdapter.notifyDataSetChanged();

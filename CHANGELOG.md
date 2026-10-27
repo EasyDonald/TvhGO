@@ -5,6 +5,11 @@ All notable changes to TvhGO are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.3]
+
+### Fixed
+- Switching servers while a channel group filter was active left the channel list empty: the group identifier belongs to the previous server, but it was kept after the switch, so no channel matched. The group filter is now cleared (and the picker reset to “All channels”) whenever the profile changes; the filter also falls back to “All channels” if the stored group no longer exists on the server.
+
 ## [1.7.2]
 
 ### Added

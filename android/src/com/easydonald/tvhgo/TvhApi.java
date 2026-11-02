@@ -26,30 +26,23 @@ public class TvhApi {
     private final String user;
     private final String pass;
     public final String profile;
+    private final HttpAuth auth;
 
     public TvhApi(String base, String user, String pass, String profile) {
         this.base = base;
         this.user = user == null ? "" : user;
         this.pass = pass == null ? "" : pass;
         this.profile = (profile == null || profile.trim().isEmpty()) ? "pass" : profile.trim();
+        this.auth = new HttpAuth(this.user, this.pass);
     }
 
     public static TvhApi from(Prefs p) {
         return new TvhApi(p.base(), p.user, p.pass, p.profile);
     }
 
-    private HttpURLConnection open(String path, String method) throws IOException {
-        URL u = new URL(base + path);
-        HttpURLConnection c = (HttpURLConnection) u.openConnection();
-        c.setConnectTimeout(10000);
-        c.setReadTimeout(20000);
-        c.setRequestMethod(method);
-        c.setRequestProperty("Accept", "application/json");
-        if (!user.isEmpty() || !pass.isEmpty()) {
-            String token = Base64.encodeToString((user + ":" + pass).getBytes("UTF-8"), Base64.NO_WRAP);
-            c.setRequestProperty("Authorization", "Basic " + token);
-        }
-        return c;
+    /** 统一走 HttpAuth：Basic 优先，遇到 Digest 挑战自动切换 */
+    private HttpURLConnection open(String path, String method, byte[] body) throws IOException {
+        return auth.open(base + path, method, body, 10000, 20000);
     }
 
     private static String readAll(InputStream in) throws IOException {
@@ -62,17 +55,8 @@ public class TvhApi {
     }
 
     private JSONObject requestJson(String path, String method, String body) throws IOException {
-        HttpURLConnection c = open(path, method);
-        if (body != null) {
-            c.setDoOutput(true);
-            c.setRequestProperty("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
-            byte[] data = body.getBytes("UTF-8");
-            c.setFixedLengthStreamingMode(data.length);
-            OutputStream os = c.getOutputStream();
-            os.write(data);
-            os.flush();
-            os.close();
-        }
+        byte[] data = body == null ? null : body.getBytes("UTF-8");
+        HttpURLConnection c = open(path, method, data);
         int code = c.getResponseCode();
         InputStream in = code >= 400 ? c.getErrorStream() : c.getInputStream();
         String text = in == null ? "" : readAll(in);

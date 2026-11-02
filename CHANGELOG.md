@@ -5,6 +5,11 @@ All notable changes to TvhGO are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8]
+
+### Added
+- **HTTP Digest authentication** in addition to Basic. Some Tvheadend deployments sit behind a reverse proxy that only accepts Digest, and the app previously reported HTTP 401 even though the credentials were valid in a browser. The app now sends Basic first, and when the server answers 401 with a Digest challenge it computes the RFC 2617 response and retries, remembering the scheme for later requests. Applied to API calls, picon downloads and the log stream.
+
 ## [1.7.3]
 
 ### Fixed

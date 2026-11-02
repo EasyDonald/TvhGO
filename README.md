@@ -135,6 +135,7 @@ Server addresses are **not shown anywhere on screen** (header, channel list, sta
 
 ## Known limitations
 - HTTP only (no self-signed HTTPS trust)
+- Basic and Digest authentication are supported; Digest is negotiated automatically when a proxy requires it
 - Playback needs VLC or another external player; there is no built-in player
 - Channel editing is limited to name and number
 - Tvheadend has no API to drop a single subscription — only whole connections

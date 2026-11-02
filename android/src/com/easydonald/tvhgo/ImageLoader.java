@@ -52,6 +52,7 @@ public class ImageLoader {
     private String base = "";
     private String auth = null;
     private String cfgBase = null, cfgUser = null, cfgPass = null;
+    private HttpAuth authObj = null;
     private File diskDir = null;
 
     public static synchronized ImageLoader get() {
@@ -73,13 +74,7 @@ public class ImageLoader {
                 cache.clear();
             }
         }
-        if ((user != null && !user.isEmpty()) || (pass != null && !pass.isEmpty())) {
-            String token = Base64.encodeToString(
-                    ((user == null ? "" : user) + ":" + (pass == null ? "" : pass)).getBytes(), Base64.NO_WRAP);
-            auth = "Basic " + token;
-        } else {
-            auth = null;
-        }
+        authObj = new HttpAuth(user, pass);
     }
 
     private boolean eq(String a, String b) {
@@ -259,10 +254,9 @@ public class ImageLoader {
         HttpURLConnection c = null;
         try {
             String url = path.startsWith("http") ? path : base + "/" + path;
-            c = (HttpURLConnection) new URL(url).openConnection();
-            c.setConnectTimeout(8000);
-            c.setReadTimeout(10000);
-            if (auth != null) c.setRequestProperty("Authorization", auth);
+            c = authObj == null
+                    ? (HttpURLConnection) new URL(url).openConnection()
+                    : authObj.open(url, "GET", null, 8000, 10000);
             InputStream in = c.getInputStream();
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             byte[] buf = new byte[8192];

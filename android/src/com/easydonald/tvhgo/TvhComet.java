@@ -24,7 +24,7 @@ public class TvhComet {
     }
 
     private final String base;
-    private final String authHeader;
+    private final HttpAuth auth;
     private final Listener listener;
 
     private volatile boolean running;
@@ -34,10 +34,7 @@ public class TvhComet {
     public TvhComet(String base, String user, String pass, Listener l) {
         this.base = base;
         this.listener = l;
-        String token = android.util.Base64.encodeToString(
-                ((user == null ? "" : user) + ":" + (pass == null ? "" : pass)).getBytes(),
-                android.util.Base64.NO_WRAP);
-        this.authHeader = "Basic " + token;
+        this.auth = new HttpAuth(user, pass);
     }
 
     public void start() {
@@ -109,17 +106,8 @@ public class TvhComet {
     private String post(String path, String body) {
         HttpURLConnection c = null;
         try {
-            c = (HttpURLConnection) new URL(base + path).openConnection();
-            c.setRequestMethod("POST");
-            c.setDoOutput(true);
-            c.setConnectTimeout(8000);
-            c.setReadTimeout(45000);
-            c.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-            c.setRequestProperty("Authorization", authHeader);
-            OutputStream os = c.getOutputStream();
-            os.write(body.getBytes("UTF-8"));
-            os.flush();
-            os.close();
+            byte[] data = body.getBytes("UTF-8");
+            c = auth.open(base + path, "POST", data, 8000, 45000);
             int code = c.getResponseCode();
             InputStream is = code >= 400 ? c.getErrorStream() : c.getInputStream();
             if (is == null) return null;

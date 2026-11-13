@@ -36,9 +36,13 @@ public class StreamRelay {
     }
 
     public synchronized int ensure(String base, String user, String pass) throws IOException {
+        return ensure(base, user, pass, null);
+    }
+
+    public synchronized int ensure(String base, String user, String pass, HttpAuth shared) throws IOException {
         if (running && server != null && !server.isClosed()) return server.getLocalPort();
         this.base = base;
-        this.auth = new HttpAuth(user, pass);
+        this.auth = shared != null ? shared : new HttpAuth(user, pass);
         server = new ServerSocket(0, 20, InetAddress.getByName("127.0.0.1"));
         running = true;
         Thread t = new Thread(new Runnable() {
@@ -114,8 +118,20 @@ public class StreamRelay {
             String[] req = lines[0].split(" ");
             if (req.length < 2) return;
             String path = req[1];
-            conn = auth.open(base + path, "GET", null, 10000, 0);
+            String method = "HEAD".equalsIgnoreCase(req[0]) ? "HEAD" : "GET";
+            conn = auth.open(base + path, method, null, 10000, 0);
             int code = conn.getResponseCode();
+            // 上游若返回重定向（例如代理要求 https），跟随一次
+            if (code >= 300 && code < 400) {
+                String loc = conn.getHeaderField("Location");
+                if (loc != null && !loc.isEmpty()) {
+                    AppLog.i("RELAY", "上游重定向 " + code + " -> " + loc);
+                    conn.disconnect();
+                    String abs = loc.startsWith("http") ? loc : base + (loc.startsWith("/") ? loc : "/" + loc);
+                    conn = auth.open(abs, method, null, 10000, 0);
+                    code = conn.getResponseCode();
+                }
+            }
             String ctype = conn.getContentType();
 
             OutputStream out = socket.getOutputStream();
@@ -132,6 +148,8 @@ public class StreamRelay {
             h.append("Connection: close\r\n\r\n");
             out.write(h.toString().getBytes("UTF-8"));
             out.flush();
+            if ("HEAD".equals(method)) return;
+            AppLog.i("RELAY", "开始转发 " + path + "（" + code + "）");
 
             InputStream up = conn.getInputStream();
             byte[] buf = new byte[32 * 1024];

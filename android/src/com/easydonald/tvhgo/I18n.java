@@ -229,7 +229,7 @@ public class I18n {
         add("客户端", "用戶端", "Client", "クライアント");
         add("服务", "服務", "Service", "サービス");
         add("码率", "碼率", "Bitrate", "ビットレート");
-        add("该 Tvheadend 版本未提供断开订阅的接口（实测多种 API 均无此功能，禁用频道也不会断流）。如需强制断开，请在网页后台停用该客户端账号，或在该客户端侧停止播放。",
+        add("该 Tvheadend 版本未提供断开订阅的接口（Tvheadend API 无此能力，禁用频道也不会中断串流）。如需强制断开，请在网页后台停用该客户端账号，或在该客户端侧停止播放。",
             "此 Tvheadend 版本未提供中斷訂閱的介面（實測多種 API 皆無此功能，停用頻道也不會斷流）。如需強制中斷，請在網頁後台停用該用戶端帳號，或在該用戶端停止播放。",
             "This Tvheadend build exposes no API to drop a subscription (verified: several endpoints 404; disabling the channel does not drop it). Disable the client account in the web UI or stop playback on the client side.",
             "この Tvheadend には購読を切断する API がありません（複数エンドポイントを検証済み）。Web UI で該当アカウントを無効化するか、クライアント側で停止してください。");

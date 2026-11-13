@@ -2476,7 +2476,22 @@ public class MainActivity extends Activity {
     }
 
     private void playUuid(String uuid, String title) {
-        startVlc(api.streamUrlForUuid(uuid, prefs.profileFor(uuid)), title);
+        String profile = prefs.profileFor(uuid);
+        String url;
+        if (api.isDigestAuth()) {
+            try {
+                int port = StreamRelay.get().ensure(prefs.base(), prefs.user, prefs.pass);
+                startService(new Intent(this, RelayService.class));
+                url = "http://127.0.0.1:" + port + "/stream/channel/" + uuid
+                        + "?profile=" + Uri.encode(profile);
+            } catch (Exception e) {
+                AppLog.i("RELAY", "中继启动失败：" + e.getMessage());
+                url = api.streamUrlForUuid(uuid, profile);
+            }
+        } else {
+            url = api.streamUrlForUuid(uuid, profile);
+        }
+        startVlc(url, title);
     }
 
     private void startVlc(String url, String title) {

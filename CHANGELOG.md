@@ -5,6 +5,15 @@ All notable changes to TvhGO are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.92]
+
+### Added
+- **Stream tokens from /playlist/auth/channels**: the app reads the authenticated playlist once per session and caches the per-channel URLs, which carry an ?auth=<token> parameter. Stream URLs handed to the player therefore contain no credentials, and work with players that cannot perform Digest authentication, so the local relay is no longer needed for those servers.
+- Settings → Playback → *Stream token* shows how many channels have a token and refreshes it on demand; the token is fetched again automatically when loading channels (10 minute freshness).
+
+### Changed
+- Streaming mode *Auto* now prefers the token URL; the relay is used only when no token is available for that channel and the server requires Digest.
+
 ## [1.91]
 
 ### Added

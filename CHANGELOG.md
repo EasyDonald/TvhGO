@@ -5,6 +5,12 @@ All notable changes to TvhGO are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.91]
+
+### Added
+- **Streaming mode setting** (Settings → Playback → *Streaming mode*): Auto (relay only when the server requires Digest), Direct (URL with embedded credentials, for players that perform Digest themselves) and Local relay (always go through the loopback relay).
+- Relay robustness: reuses the API's authentication object instead of performing a separate Digest handshake, answers HEAD probes, follows a single upstream redirect, and records start/failure details in the app log.
+
 ## [1.9]
 
 ### Added

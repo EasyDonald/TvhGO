@@ -41,6 +41,10 @@ public class TvhApi {
     }
 
     /** 服务器是否需要 Digest 认证（需要走本地中继才能播放） */
+    public HttpAuth authRef() {
+        return auth;
+    }
+
     public boolean isDigestAuth() {
         return auth.isDigest();
     }

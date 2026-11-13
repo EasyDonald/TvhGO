@@ -245,6 +245,11 @@ public class I18n {
         add("日志", "日誌", "Logs", "ログ");
         add("搜索", "搜尋", "search", "検索");
         add("串流方式", "串流方式", "Streaming mode", "ストリーム方式");
+        add("串流令牌", "串流令牌", "Stream token", "ストリームトークン");
+        add("未获取", "未取得", "not loaded", "未取得");
+        add("正在刷新串流令牌…", "正在重新整理串流令牌…", "Refreshing stream token…", "トークンを更新中…");
+        add("已刷新，", "已重新整理，", "Refreshed, ", "更新しました: ");
+        add("个频道可用", "個頻道可用", " channels available", " チャンネル");
         add("自动", "自動", "Auto", "自動");
         add("直连（内嵌凭据）", "直連（內嵌憑證）", "Direct (embedded credentials)", "直接（認証情報埋め込み）");
         add("本地中转", "本機中轉", "Local relay", "ローカル中継");

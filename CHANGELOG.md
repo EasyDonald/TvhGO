@@ -5,6 +5,16 @@ All notable changes to TvhGO are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.93]
+
+### Changed
+- Simplified streaming: the local relay has been removed. *Streaming mode* now has two options — **Username/password** (default, credentials embedded in the URL) and **Auth token** (the `?auth=<token>` parameter taken from `/playlist/auth/channels`).
+- The token belongs to the account, so it is stored once and shown in Settings → Playback → *Auth token*; it is fetched on demand and refreshed only when you tap it (also fetched automatically when switching to token mode or loading channels in that mode).
+- Stream URLs are now `.../stream/channel/<uuid>?profile=<p>&auth=<token>`; verified against three servers (two behind Digest-only proxies), all returning `video/mp2t` without any credentials.
+
+### Removed
+- `StreamRelay`, `RelayService` and the foreground-service permissions.
+
 ## [1.92]
 
 ### Added

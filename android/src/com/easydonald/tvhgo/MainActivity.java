@@ -2583,6 +2583,9 @@ public class MainActivity extends Activity {
                 public void run() {
                     try {
                         api.refreshToken();
+                        prefs.authToken = api.authToken();
+                        prefs.authTokenKey = api.accountKey();
+                        prefs.save(MainActivity.this);
                         ui.post(new Runnable() {
                             public void run() { showStreamLink(c); }
                         });
@@ -2666,6 +2669,9 @@ public class MainActivity extends Activity {
             public void run() {
                 try {
                     final String t = api.refreshToken();
+                    prefs.authToken = t;
+                    prefs.authTokenKey = api.accountKey();
+                    prefs.save(MainActivity.this);
                     ui.post(new Runnable() {
                         public void run() {
                             toast(tr("已获取令牌"));

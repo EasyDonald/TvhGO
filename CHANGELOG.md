@@ -5,6 +5,14 @@ All notable changes to TvhGO are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9]
+
+### Added
+- **Local stream relay** for servers behind a Digest-only proxy. External players cannot authenticate against such a proxy (they only speak Basic), so the app now opens a loopback port, authenticates upstream itself and forwards the transport stream; the player receives a http://127.0.0.1:<port>/stream/... URL. A foreground service keeps the relay alive while playback runs. Servers that accept Basic keep using the direct URL with embedded credentials.
+
+### Fixed
+- Channel detail: a HTTP 403 from the DVR API (account without recording permission) aborted the whole screen, so the per-channel EPG was never shown. The booking lookup is now best-effort and the guide renders regardless.
+
 ## [1.8]
 
 ### Added

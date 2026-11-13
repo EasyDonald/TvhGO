@@ -264,9 +264,12 @@ public class ChannelDetailActivity extends Activity {
                         }
                     } catch (Exception ignored) {
                     }
-                    final List<DvrEntry> up = api.dvrUpcoming();
+                    // DVR 权限可能未开放（403），不能因此让整个节目单加载失败
                     final Set<String> bookedSet = new HashSet<String>();
-                    for (DvrEntry d : up) bookedSet.add(d.start + "|" + d.title);
+                    try {
+                        for (DvrEntry d : api.dvrUpcoming()) bookedSet.add(d.start + "|" + d.title);
+                    } catch (Exception ignored) {
+                    }
                     ui.post(new Runnable() {
                         public void run() {
                             progress.setVisibility(View.GONE);
@@ -389,7 +392,7 @@ public class ChannelDetailActivity extends Activity {
     }
 
     private void play() {
-        String url = api.streamUrlForUuid(uuid, prefs.profileFor(uuid));
+        String url = streamUrl(uuid, prefs.profileFor(uuid));
         Intent i = new Intent(Intent.ACTION_VIEW);
         i.setDataAndType(Uri.parse(url), "video/*");
         i.putExtra("title", channelName);
@@ -443,8 +446,25 @@ public class ChannelDetailActivity extends Activity {
         });
     }
 
+    /** Digest 服务器：本地中继转发；Basic 服务器：内嵌凭据的直连地址 */
+    private String streamUrl(String channelUuid, String profile) {
+        if (!api.isDigestAuth()) return api.streamUrlForUuid(channelUuid, profile);
+        try {
+            int port = StreamRelay.get().ensure(prefs.base(), prefs.user, prefs.pass);
+            try {
+                startService(new android.content.Intent(this, RelayService.class));
+            } catch (Exception ignored) {
+            }
+            return "http://127.0.0.1:" + port + "/stream/channel/" + channelUuid
+                    + "?profile=" + android.net.Uri.encode(profile);
+        } catch (Exception e) {
+            AppLog.i("RELAY", "中继启动失败：" + e.getMessage());
+            return api.streamUrlForUuid(channelUuid, profile);
+        }
+    }
+
     private void showLink() {
-        final String url = api.streamUrlForUuid(uuid, prefs.profileFor(uuid));
+        final String url = streamUrl(uuid, prefs.profileFor(uuid));
         dlg()
                 .setTitle(tr("串流链接 · ") + channelName)
                 .setMessage(url)

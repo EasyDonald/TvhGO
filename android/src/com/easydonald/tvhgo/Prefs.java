@@ -53,6 +53,8 @@ public class Prefs {
     public int lang = 0;
     /** 主题：0=跟随系统，1=深色，2=浅色 */
     public int themeMode = 0;
+    /** 串流方式：0=自动，1=直连（内嵌凭据），2=本地中转 */
+    public int streamMode = 0;
     /** 频道单独指定的串流 profile（uuid -> profile 名），没有则跟随默认 */
     public final java.util.Map<String, String> channelProfiles = new java.util.LinkedHashMap<String, String>();
 
@@ -120,6 +122,7 @@ public class Prefs {
         p.subtitleMode = sp.getInt("subtitle_mode", 1);
         p.lang = sp.getInt("lang", 0);
         p.themeMode = sp.getInt("theme_mode", 0);
+        p.streamMode = sp.getInt("stream_mode", 0);
         p.profileChosen = sp.getBoolean("profile_chosen", false);
 
         String cp = sp.getString("channel_profiles", "");
@@ -179,6 +182,7 @@ public class Prefs {
                 .putInt("subtitle_mode", subtitleMode)
                 .putInt("lang", lang)
                 .putInt("theme_mode", themeMode)
+                .putInt("stream_mode", streamMode)
                 .apply();
     }
 

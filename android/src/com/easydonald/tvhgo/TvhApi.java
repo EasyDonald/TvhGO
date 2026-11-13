@@ -62,6 +62,9 @@ public class TvhApi {
                 .compile("auth=([A-Za-z0-9._~%-]+)").matcher(text);
         if (!m.find()) throw new IOException("播放列表中没有 auth 参数");
         authToken = m.group(1);
+        useToken = true;
+        AppLog.i("TOKEN", "已获取令牌：长度 " + authToken.length()
+                + "，前缀 " + authToken.substring(0, Math.min(4, authToken.length())) + "…");
         return authToken;
     }
 
@@ -752,9 +755,12 @@ public class TvhApi {
     public String streamUrlForUuid(String uuid, String profileName) {
         String prof = (profileName == null || profileName.isEmpty()) ? profile : profileName;
         if (useToken && authToken != null && !authToken.isEmpty()) {
+            AppLog.i("STREAM", "使用 Auth 令牌生成串流地址（" + prof + "）");
             return base + "/stream/channel/" + uuid + "?profile=" + enc(prof)
                     + "&auth=" + enc(authToken);
         }
+        AppLog.i("STREAM", "使用账号密码生成串流地址（" + prof + "，令牌="
+                + (authToken == null ? "未获取" : "有但未启用") + "）");
         return base.replaceFirst("://", "://" + enc(user) + ":" + enc(pass) + "@") +
                 "/stream/channel/" + uuid + "?profile=" + enc(prof);
     }

@@ -8,203 +8,188 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.94]
 
 ### Fixed
-- With *Stream authentication* set to **Auth token**, the copied stream link (channel long-press → copy) still contained username/password: the token flag was only applied on the playback paths. The authentication mode is now stored on the API client, so playback, link copying and recording downloads all follow the selected mode.
-- Copying a link in token mode fetches the token first when it is not present yet, instead of silently producing a credential URL.
-- Recording downloads use ?auth=<token> in token mode (no Authorization header needed).
+- With *Stream authentication* set to **Auth token**, the copied stream link (long-press a channel → copy) still contained the username and password, because the token flag was only applied on the playback paths. The authentication mode is now part of the API client, so playback, link copying and recording downloads all follow the selected mode.
+- Copying a link in token mode fetches the token first when it has not been loaded yet, instead of silently producing a credential URL.
+- Recording downloads use `?auth=<token>` in token mode and no longer send an `Authorization` header.
 
 ### Changed
-- Setting renamed from *Streaming mode* to **Stream authentication** (账号密码 / Auth 令牌).
+- Setting renamed from *Streaming mode* to **Stream authentication** (username/password or auth token).
 
 ## [1.93]
 
 ### Changed
-- Simplified streaming: the local relay has been removed. *Streaming mode* now has two options — **Username/password** (default, credentials embedded in the URL) and **Auth token** (the `?auth=<token>` parameter taken from `/playlist/auth/channels`).
-- The token belongs to the account, so it is stored once and shown in Settings → Playback → *Auth token*; it is fetched on demand and refreshed only when you tap it (also fetched automatically when switching to token mode or loading channels in that mode).
-- Stream URLs are now `.../stream/channel/<uuid>?profile=<p>&auth=<token>`; verified against three servers (two behind Digest-only proxies), all returning `video/mp2t` without any credentials.
+- Streaming authentication simplified to two modes: **username/password** (default, credentials embedded in the URL) and **auth token** (`?auth=<token>` taken from `/playlist/auth/channels`).
+- The token belongs to the account, so it is stored once, shown in Settings → Playback → *Auth token*, fetched on demand and refreshed only when requested.
+- Stream URLs become `.../stream/channel/<uuid>?profile=<profile>&auth=<token>`.
 
 ### Removed
-- `StreamRelay`, `RelayService` and the foreground-service permissions.
+- The local stream relay, its foreground service and the related permissions.
 
 ## [1.92]
 
 ### Added
-- **Stream tokens from /playlist/auth/channels**: the app reads the authenticated playlist once per session and caches the per-channel URLs, which carry an ?auth=<token> parameter. Stream URLs handed to the player therefore contain no credentials, and work with players that cannot perform Digest authentication, so the local relay is no longer needed for those servers.
-- Settings → Playback → *Stream token* shows how many channels have a token and refreshes it on demand; the token is fetched again automatically when loading channels (10 minute freshness).
+- **Auth tokens from `/playlist/auth/channels`**: the authenticated playlist is read once and the per-channel URLs carrying an `?auth=<token>` parameter are cached. Links handed to the player contain no credentials and work with players that cannot perform Digest authentication.
 
 ### Changed
-- Streaming mode *Auto* now prefers the token URL; the relay is used only when no token is available for that channel and the server requires Digest.
+- Streaming mode *Auto* prefers the token URL and falls back to the local relay only when no token is available for that channel.
 
 ## [1.91]
 
 ### Added
-- **Streaming mode setting** (Settings → Playback → *Streaming mode*): Auto (relay only when the server requires Digest), Direct (URL with embedded credentials, for players that perform Digest themselves) and Local relay (always go through the loopback relay).
-- Relay robustness: reuses the API's authentication object instead of performing a separate Digest handshake, answers HEAD probes, follows a single upstream redirect, and records start/failure details in the app log.
+- **Streaming mode setting** (Settings → Playback): *Auto*, *Direct* (credentials embedded in the URL) and *Local relay*.
+- Relay improvements: reuses the API authentication object, answers `HEAD` probes, follows a single upstream redirect and records start/failure details in the app log.
 
 ## [1.9]
 
 ### Added
-- **Local stream relay** for servers behind a Digest-only proxy. External players cannot authenticate against such a proxy (they only speak Basic), so the app now opens a loopback port, authenticates upstream itself and forwards the transport stream; the player receives a http://127.0.0.1:<port>/stream/... URL. A foreground service keeps the relay alive while playback runs. Servers that accept Basic keep using the direct URL with embedded credentials.
+- **Local stream relay** for servers behind a Digest-only reverse proxy: the app opens a loopback port, performs the upstream authentication itself and forwards the transport stream, so external players receive a `http://127.0.0.1:<port>/stream/...` URL. A foreground service keeps the relay alive during playback.
 
 ### Fixed
-- Channel detail: a HTTP 403 from the DVR API (account without recording permission) aborted the whole screen, so the per-channel EPG was never shown. The booking lookup is now best-effort and the guide renders regardless.
+- Channel detail: an HTTP 403 from the DVR API (account without recording permission) aborted the whole screen, so the per-channel EPG was never shown. The booking lookup is now best-effort and the guide renders regardless.
 
 ## [1.8]
 
 ### Added
-- **HTTP Digest authentication** in addition to Basic. Some Tvheadend deployments sit behind a reverse proxy that only accepts Digest, and the app previously reported HTTP 401 even though the credentials were valid in a browser. The app now sends Basic first, and when the server answers 401 with a Digest challenge it computes the RFC 2617 response and retries, remembering the scheme for later requests. Applied to API calls, picon downloads and the log stream.
+- **HTTP Digest authentication** in addition to Basic. When a server answers 401 with a Digest challenge, the app computes the RFC 2617 response and retries, remembering the scheme for subsequent requests. Applied to API calls, picon downloads and the log stream.
 
 ## [1.7.3]
 
 ### Fixed
-- Switching servers while a channel group filter was active left the channel list empty: the group identifier belongs to the previous server, but it was kept after the switch, so no channel matched. The group filter is now cleared (and the picker reset to “All channels”) whenever the profile changes; the filter also falls back to “All channels” if the stored group no longer exists on the server.
+- Switching servers while a channel group filter was active left the channel list empty, because the group identifier belongs to the previous server. The filter is now cleared on profile change, and falls back to “All channels” when the stored group no longer exists.
 
 ## [1.7.2]
 
 ### Added
-- Recording lists (upcoming, inished, ailed, 
-emoved) and the autorec / timerec lists now show the creator of each entry (owner / creator from the Tvheadend API). The rule detail sheet and the recording editor show it as well.
+- Recording lists (upcoming, finished, failed, removed) and the autorec / timerec lists show the creator of each entry (`owner` / `creator` from the API). The rule detail sheet and the recording editor show it as well.
 
 ## [1.7.1]
 
 ### Fixed
-- Autorec / Timerec: the “Details” action of a rule did nothing. It now opens a detail sheet with type, name, title, channel, weekdays, start and stop time, directory, priority, comment, rule ID, and buttons to enable/disable or delete the rule.
+- Autorec / Timerec: the “Details” action of a rule had no handler. It now opens a detail sheet with type, name, title, channel, weekdays, start and stop time, directory, priority, comment and rule ID, plus actions to enable/disable or delete the rule.
 
 ## [1.7]
 
 ### Added
-- **Recording search**: a search field above the DVR list filters the current category by recording title, channel name and status; autorec and timerec rules are matched against name, title, channel and weekdays. The header shows how many entries match (search N/M), the field has an inline clear button and the filter is re-applied when switching category.
+- **Recording search**: a search field above the DVR list filters the current category by recording title, channel name and status; autorec and timerec rules are matched against name, title, channel and weekdays. The header shows how many entries match, and the filter is re-applied when switching category.
 
 ## [1.6.2]
 
 ### Changed
-- Channel detail: the day tabs now show the weekday next to the date (for example 10-24 (Fri)); the programme count is still shown in the status line below.
+- Channel detail: the day tabs show the weekday next to the date (`10-24 (Fri)`); the programme count is shown in the status line.
 
 ## [1.6.1]
 
 ### Fixed
-- Channel icons: recycled rows kept the previous channel's icon; the image view is now cleared and the channel-number placeholder restored on every bind.
-- Icons: values that cannot be fetched (`"1"`, `file://` paths) are skipped instead of being requested on every load.
-- Icons: failed URLs are remembered for the session, so preloading completes instead of retrying broken entries indefinitely.
-- Icons: the cache key is the absolute URL, so relative entries such as `imagecache/41` no longer collide between two servers.
+- Channel icons: recycled rows kept the previous channel's image; the image view is cleared and the channel-number placeholder restored on every bind.
+- Icons with values that cannot be fetched (`1`, `file://`) are skipped instead of being requested repeatedly.
+- Failed icon URLs are remembered for the session, so preloading completes instead of retrying broken entries.
+- The icon cache key is the absolute URL, so relative entries such as `imagecache/41` no longer collide between two servers.
 
 ### Added
-- Settings → picon cache shows the number of cached icons, the size and the failure count; the app log records how many icons were downloaded, cached, failed and skipped.
+- Settings → picon cache shows the number of cached icons, their size and the failure count; the app log records download results.
 
 ## [1.6]
 
 ### Added
-- **Persistent picon cache**: channel icons are stored in the app cache directory (file name derived from the icon URL), so switching servers, refreshing, and restarting no longer re-download icons. A new settings entry shows the cache size and clears it on demand.
-- **Logs**: settings now offers *Tvheadend log* (live server log streamed over the Tvheadend comet channel, with debug level enabled while the page is open) and *App log* (recent client events: startup, server switches, channel loads, icon preloading, API errors). Both pages support copy-to-clipboard.
+- **Persistent picon cache**: channel icons are stored in the app cache directory, so switching servers, refreshing and restarting no longer re-download them. A settings entry shows the cache size and clears it on demand.
+- **Logs**: a live Tvheadend log (streamed over the Tvheadend comet channel while the page is open) and an app log covering startup, server switches, channel loads, icon preloading and API errors. Both support copy-to-clipboard.
 
 ### Fixed
-- Switching servers could leave the channel list empty or blocked: channel loading used a single-threaded executor, so a request against the previous server delayed the new one. Loading now runs on a small pool and stale responses are discarded through a generation counter.
-- Icon preloading is generation-based as well, so a preload from the previous server cannot block or overwrite the new server's icons.
-
-### Changed
-- Picon images are decoded to a maximum side of 96 px before being cached on disk and in memory.
+- Switching servers could leave the channel list empty or blocked, because channel loading used a single-threaded executor. Loading now runs on a small pool and stale responses are discarded through a generation counter.
+- Icon preloading is generation-based as well, so a preload from the previous server cannot block the new one.
 
 ## [1.5.5]
 
 ### Changed
-- Channel picons are preloaded for the whole list in the background instead of being fetched while scrolling. Loading runs with four concurrent requests, refreshes the visible rows every 25 icons, and completes within a few seconds on a local server. Images are downscaled to 96 px before caching and the cache holds the full channel list.
+- Channel picons are preloaded for the whole list in the background instead of being fetched while scrolling.
 
 ## [1.5.4]
 
 ### Added
-- Settings / server profiles: profiles can now be deleted. The server switcher lists every profile with a delete action per row and asks for confirmation; at least one profile is always kept, and deleting the active profile falls back to the first remaining one. Deleting an entry before the active one keeps the active selection pointing at the same server.
-
-### Fixed
-- Server profile indices are re-based correctly after a deletion that sits before the current profile.
+- Server profiles can be deleted from the switcher, with confirmation; at least one profile is always kept.
 
 ## [1.5.3]
 
 ### Changed
-- Status: the input stream section is shown again with tuner information only — input name, stream name and subscriber count (plus signal level when reported). The bitrate is intentionally not displayed: /api/status/inputs returns an average since the input started, while the Tvheadend web interface receives live per-second values over its comet channel.
-- DVR: entries are treated as “recording” based on sched_status / state, so a task that started early through pre-padding is pinned to the top of the upcoming list instead of being ordered by its nominal start time.
+- Status: the input stream section is shown again with tuner information only (input name, stream name, subscriber count, signal when reported); the bitrate is intentionally omitted because the HTTP endpoint returns a cumulative average rather than a live rate.
+- DVR: entries are treated as “recording” based on `sched_status` / `state`, so a task that started early through pre-padding is pinned to the top of the upcoming list.
 
 ### Fixed
-- EPG timeline: rows and programme blocks are clipped below the ruler, and the ruler is painted last, so blocks no longer cover the time labels while scrolling.
+- EPG timeline: rows and programme blocks are clipped below the ruler and the ruler is drawn last, so blocks no longer cover the time labels.
 
 ## [1.5.2]
 
 ### Changed
-- Status: the input stream section has been removed. The bitrate reported by /api/status/inputs is an average since the input started and drifts away from the value shown by the Tvheadend web interface, which receives live updates over its comet channel. Rather than display numbers that cannot be kept consistent, the section is no longer shown; subscriptions and connections remain available.
+- Status: the input stream section was removed, as `/api/status/inputs` reports a cumulative average bitrate that cannot be kept consistent with the live values shown by the Tvheadend web interface.
 
 ### Fixed
-- EPG timeline: the time ruler was drawn twice and the second background fill covered the tick labels. The duplicate draw has been removed.
+- EPG timeline: the time ruler was drawn twice, the second background fill covering the tick labels.
 
 ## [1.5.1]
 
 ### Fixed
-- EPG timeline: the time ruler was drawn twice; the second background fill covered the tick lines and labels. The duplicate draw has been removed and the ruler now renders correctly.
-- Status / input streams: bitrate is taken directly from `bps` returned by `/api/status/inputs`. The previous per-input estimate (sum of subscriptions on that input) and the value-hold smoothing produced inconsistent readings and have been removed. A zero value is rendered as `—`.
-
-### Notes
-- `bps` is the multiplex bitrate. Subscription `in` / `out` are per-client byte rates and are not directly comparable to it.
+- EPG timeline: the ruler background was painted over the tick lines and labels; the duplicate draw has been removed.
+- Status / input streams: bitrate is taken directly from the value returned by the API.
 
 ## [1.5]
 
 ### Added
 - EPG timeline: time ruler with distinct styles for full-hour and half-hour ticks.
-- Status / subscription detail: **Play this channel** action, resolved by channel name.
-- About: opens the project page at https://github.com/EasyDonald/TvhGO.
+- Status / subscription detail: play the channel a subscription is watching; drop that user's connections.
+- About: opens the project page.
 
 ### Changed
-- EPG: channel names in the left column wrap onto two lines instead of being truncated.
-- Status / subscriptions: DVR recordings carry no client user-agent; the subscription title (`DVR: <name>`) is shown instead.
-- Open Tvheadend web UI: the URL now embeds HTTP Basic credentials so the browser authenticates directly.
-- Removed the redundant “Now” button from the EPG toolbar.
-- HTTP 403 is reported as a permission error; administrator rights are no longer assumed, since DVR access can be granted independently.
+- EPG: long channel names wrap onto two lines.
+- Status / subscriptions: DVR recordings have no client user-agent, so the subscription title (`DVR: <name>`) is displayed.
+- Open Tvheadend web UI: the URL embeds HTTP Basic credentials.
+- HTTP 403 is reported as a permission error; administrator rights are no longer assumed.
 
 ## [1.4.2]
 
 ### Fixed
-- Autorec / Timerec rows: tapping a rule terminated the app. The list click handler always read the recording-entry array, while these two categories use the rule array, causing an out-of-bounds access. Events are now dispatched by the active category.
+- Autorec / Timerec rows: tapping a rule terminated the app, because the list click handler always read the recording-entry array. Events are now dispatched by the active category.
 
 ### Changed
-- Sorting: upcoming entries are ordered by start time with running recordings pinned first; finished, failed and removed entries are ordered newest first; autorec and timerec rules are ordered by name.
+- Sorting: upcoming entries are ordered by start time with running recordings pinned first; finished, failed and removed entries newest first; rules by name.
 
 ## [1.4.1]
 
 ### Fixed
-- DVR configuration picker: DVR profiles (Digital Video Recorder Profile) and stream profiles are distinct concepts. The picker now shows only the DVR configuration name.
-- Default stream profile: restored to `pass` and no longer derived from the recording configuration.
-- About: the version label is read from the APK `versionName` instead of a fixed string.
+- DVR configuration picker: DVR profiles and stream profiles are distinct concepts, so the picker now shows only the DVR configuration name.
+- Default stream profile restored to `pass` and no longer derived from the recording configuration.
+- About: the version label is read from the APK `versionName`.
 
 ## [1.4]
 
 ### Added
-- Recording tasks in the upcoming and recording states can be edited: title, start time, stop time, pre/post padding and enabled state (`POST /api/idnode/save`).
+- Recording tasks in the upcoming and recording states can be edited: title, start and stop time, pre/post padding and enabled state.
 
 ### Changed
 - DVR configuration names are read from the server.
-- Removed the play counter from recording rows.
-- Errors on a recording no longer highlight the row subtitle in a warning colour.
+- The play counter was removed from recording rows, and errors no longer highlight the row subtitle.
 
 ## [1.3.4]
 
 ### Fixed
-- DVR lists are now paged (400 entries per request, following `total`), removing the 200-entry limit on finished recordings.
-- Autorec and Timerec lists use the same paging.
+- DVR lists are paged (400 entries per request, following the reported total), removing the 200-entry limit.
 
 ### Added
-- Multiple external players: add players with a display name and package name, edit, delete and switch between them. VLC is preinstalled and the system chooser remains available.
+- Multiple external players: add players with a display name and package name, edit, delete and switch between them.
 
 ## [1.3.3]
 
 ### Changed
-- The server address is no longer displayed in the interface. The header, channel status line, status page, settings rows and profile switcher show the configuration name only.
-- The address is available in the server edit dialog, where it is configured.
+- The server address is no longer displayed in the interface; the header, status line, status page and profile switcher show the configuration name only.
 
 ## [1.3.2]
 
 First public release.
 
 ### Added
-- Channel list with channel number or picon, search by name or number, group filter, subtitle showing either the group or the current programme.
-- Channel detail with per-day EPG (today, tomorrow, `MM-dd`, up to seven days), per-channel recording and per-channel stream profile.
-- Playback through an external player (VLC or the system chooser) and stream URL sharing.
-- EPG timeline: drag to browse, tap a programme to play or record.
-- DVR: upcoming, finished, failed, removed, autorec and timerec categories, with cancel, stop, delete, download to device, re-record and rule enable/disable.
-- Status: server information, active subscriptions, input streams and connections, including the ability to drop a user's connections.
-- Settings: multiple server profiles, default stream profile, dark/light theme and four interface languages (Simplified Chinese, Traditional Chinese, English, Japanese).
+- Channel list with channel number or picon, search, group filter and a subtitle that shows either the group or the current programme.
+- Channel detail with per-day EPG (up to seven days), per-channel recording and per-channel stream profile.
+- Playback through an external player and stream URL sharing.
+- EPG timeline with drag scrolling.
+- DVR with upcoming, finished, failed, removed, autorec and timerec categories.
+- Status view with subscriptions, input streams and connections.
+- Multiple server profiles, dark/light theme and four interface languages.

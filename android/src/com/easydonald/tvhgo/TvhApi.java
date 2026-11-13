@@ -37,7 +37,9 @@ public class TvhApi {
     }
 
     public static TvhApi from(Prefs p) {
-        return new TvhApi(p.base(), p.user, p.pass, p.profile);
+        TvhApi a = new TvhApi(p.base(), p.user, p.pass, p.profile);
+        a.setUseToken(p.streamMode == 1);
+        return a;
     }
 
     /** 服务器是否需要 Digest 认证（需要走本地中继才能播放） */
@@ -624,6 +626,9 @@ public class TvhApi {
 
     /** 已录文件播放地址 */
     public String recordingUrl(String uuid) {
+        if (useToken && authToken != null && !authToken.isEmpty()) {
+            return base + "/dvrfile/" + uuid + "?auth=" + enc(authToken);
+        }
         return base.replaceFirst("://", "://" + enc(user) + ":" + enc(pass) + "@") + "/dvrfile/" + uuid;
     }
 

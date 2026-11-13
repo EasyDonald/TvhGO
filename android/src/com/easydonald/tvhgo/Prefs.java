@@ -55,6 +55,9 @@ public class Prefs {
     public int themeMode = 0;
     /** 串流方式：0=账号密码，1=Auth 令牌 */
     public int streamMode = 0;
+    /** 上次获取到的 Auth 令牌，及其所属的 服务器|账号 标识 */
+    public String authToken = "";
+    public String authTokenKey = "";
     /** 频道单独指定的串流 profile（uuid -> profile 名），没有则跟随默认 */
     public final java.util.Map<String, String> channelProfiles = new java.util.LinkedHashMap<String, String>();
 
@@ -123,6 +126,8 @@ public class Prefs {
         p.lang = sp.getInt("lang", 0);
         p.themeMode = sp.getInt("theme_mode", 0);
         p.streamMode = sp.getInt("stream_mode", 0);
+        p.authToken = sp.getString("auth_token", "");
+        p.authTokenKey = sp.getString("auth_token_key", "");
         if (p.streamMode > 1) p.streamMode = 0;   // 旧版本的三档设置迁移为默认
         p.profileChosen = sp.getBoolean("profile_chosen", false);
 
@@ -184,6 +189,8 @@ public class Prefs {
                 .putInt("lang", lang)
                 .putInt("theme_mode", themeMode)
                 .putInt("stream_mode", streamMode)
+                .putString("auth_token", authToken)
+                .putString("auth_token_key", authTokenKey)
                 .apply();
     }
 

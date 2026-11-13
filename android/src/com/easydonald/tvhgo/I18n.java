@@ -246,6 +246,12 @@ public class I18n {
         add("搜索", "搜尋", "search", "検索");
         add("串流验证方式", "串流驗證方式", "Stream authentication", "ストリーム認証方式");
         add("Auth 令牌", "Auth 令牌", "Auth token", "Auth トークン");
+        add("已切换为 Auth 令牌", "已切換為 Auth 令牌", "Switched to auth token", "Auth トークンに切替");
+        add("已切换为账号密码", "已切換為帳號密碼", "Switched to username/password", "ユーザー名とパスワードに切替");
+        add("令牌获取失败，已回退账号密码方式", "令牌取得失敗，已改用帳號密碼", "Token unavailable, falling back to credentials", "トークン取得失敗、認証情報に戻します");
+        add("无法获取 Auth 令牌", "無法取得 Auth 令牌", "Auth token unavailable", "Auth トークンを取得できません");
+        add("该账号无法从服务器读取播放列表：", "此帳號無法從伺服器讀取播放清單：", "The account cannot read the playlist from the server: ", "このアカウントは再生リストを取得できません: ");
+        add("可改用「账号密码」方式，或在设置中重试获取令牌。", "可改用「帳號密碼」方式，或在設定中重試取得令牌。", "Switch to username/password, or retry the token in Settings.", "「ユーザー名とパスワード」に切り替えるか、設定で再取得してください。");
         add("账号密码", "帳號密碼", "Username/password", "ユーザー名とパスワード");
         add("未获取，点击获取", "未取得，點擊取得", "not loaded, tap to fetch", "未取得（タップで取得）");
         add("正在获取 Auth 令牌…", "正在取得 Auth 令牌…", "Fetching auth token…", "Auth トークンを取得中…");

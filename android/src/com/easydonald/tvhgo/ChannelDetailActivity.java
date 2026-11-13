@@ -448,23 +448,8 @@ public class ChannelDetailActivity extends Activity {
 
     /** Digest 服务器：本地中继转发；Basic 服务器：内嵌凭据的直连地址 */
     private String streamUrl(String channelUuid, String profile) {
-        boolean hasToken = api.playlistUrlsCached() != null
-                && api.playlistUrlsCached().containsKey(channelUuid);
-        boolean useRelay = prefs.streamMode == 2
-                || (prefs.streamMode == 0 && !hasToken && api.isDigestAuth());
-        if (!useRelay) return api.streamUrlForUuid(channelUuid, profile);
-        try {
-            int port = StreamRelay.get().ensure(prefs.base(), prefs.user, prefs.pass, api.authRef());
-            try {
-                startService(new android.content.Intent(this, RelayService.class));
-            } catch (Exception ignored) {
-            }
-            return "http://127.0.0.1:" + port + "/stream/channel/" + channelUuid
-                    + "?profile=" + android.net.Uri.encode(profile);
-        } catch (Exception e) {
-            AppLog.i("RELAY", "中继启动失败：" + e.getMessage());
-            return api.streamUrlForUuid(channelUuid, profile);
-        }
+        api.setUseToken(prefs.streamMode == 1);
+        return api.streamUrlForUuid(channelUuid, profile);
     }
 
     private void showLink() {

@@ -39,7 +39,20 @@ public class TvhApi {
     public static TvhApi from(Prefs p) {
         TvhApi a = new TvhApi(p.base(), p.user, p.pass, p.profile);
         a.setUseToken(p.streamMode == 1);
+        String key = a.accountKey();
+        if (key.equals(p.authTokenKey) && p.authToken != null && !p.authToken.isEmpty()) {
+            a.authToken = p.authToken;
+        }
         return a;
+    }
+
+    /** 服务器 + 账号 的标识，用于判断缓存令牌是否属于当前配置 */
+    public String accountKey() {
+        return base + "|" + user;
+    }
+
+    public void setAuthToken(String t) {
+        authToken = t;
     }
 
     /** 服务器是否需要 Digest 认证（需要走本地中继才能播放） */

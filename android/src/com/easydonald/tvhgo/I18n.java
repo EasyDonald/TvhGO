@@ -245,7 +245,12 @@ public class I18n {
         add("日志", "日誌", "Logs", "ログ");
         add("搜索", "搜尋", "search", "検索");
         add("串流方式", "串流方式", "Streaming mode", "ストリーム方式");
-        add("串流令牌", "串流令牌", "Stream token", "ストリームトークン");
+        add("Auth 令牌", "Auth 令牌", "Auth token", "Auth トークン");
+        add("账号密码", "帳號密碼", "Username/password", "ユーザー名とパスワード");
+        add("未获取，点击获取", "未取得，點擊取得", "not loaded, tap to fetch", "未取得（タップで取得）");
+        add("正在获取 Auth 令牌…", "正在取得 Auth 令牌…", "Fetching auth token…", "Auth トークンを取得中…");
+        add("已获取令牌", "已取得令牌", "Token loaded", "トークン取得済み");
+        add("获取失败：", "取得失敗：", "Fetch failed: ", "取得失敗: ");
         add("未获取", "未取得", "not loaded", "未取得");
         add("正在刷新串流令牌…", "正在重新整理串流令牌…", "Refreshing stream token…", "トークンを更新中…");
         add("已刷新，", "已重新整理，", "Refreshed, ", "更新しました: ");

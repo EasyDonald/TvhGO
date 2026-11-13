@@ -5,6 +5,11 @@ All notable changes to TvhGO are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.96]
+
+### Fixed
+- Channel detail page: the “stream link” action in the top-right corner still produced a credential URL in auth token mode, because each screen creates its own API client and the token was only held in memory by the channel list. The token is now persisted per server and account, restored when an API client is created, and fetched on demand when a screen needs it. Playback from the detail page follows the same path.
+
 ## [1.95]
 
 ### Fixed

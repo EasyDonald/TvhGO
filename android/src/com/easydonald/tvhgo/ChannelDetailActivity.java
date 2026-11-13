@@ -392,6 +392,25 @@ public class ChannelDetailActivity extends Activity {
     }
 
     private void play() {
+        if (prefs.streamMode == 1 && (api.authToken() == null || api.authToken().isEmpty())) {
+            toast(tr("正在获取 Auth 令牌…"));
+            bg.execute(new Runnable() {
+                public void run() {
+                    final boolean ok = ensureToken();
+                    ui.post(new Runnable() {
+                        public void run() {
+                            if (!ok) toast(tr("无法获取 Auth 令牌，已使用账号密码方式"));
+                            startPlayer();
+                        }
+                    });
+                }
+            });
+            return;
+        }
+        startPlayer();
+    }
+
+    private void startPlayer() {
         String url = streamUrl(uuid, prefs.profileFor(uuid));
         Intent i = new Intent(Intent.ACTION_VIEW);
         i.setDataAndType(Uri.parse(url), "video/*");
@@ -452,7 +471,43 @@ public class ChannelDetailActivity extends Activity {
         return api.streamUrlForUuid(channelUuid, profile);
     }
 
+    /** 令牌模式下若还没有令牌，先取一次（必须在后台线程调用） */
+    private boolean ensureToken() {
+        if (prefs.streamMode != 1) return true;
+        api.setUseToken(true);
+        if (api.authToken() != null && !api.authToken().isEmpty()) return true;
+        try {
+            api.refreshToken();
+            prefs.authToken = api.authToken();
+            prefs.authTokenKey = api.accountKey();
+            prefs.save(this);
+            return true;
+        } catch (Exception e) {
+            AppLog.i("TOKEN", "详情页获取失败：" + e.getMessage());
+            return false;
+        }
+    }
+
     private void showLink() {
+        if (prefs.streamMode == 1 && (api.authToken() == null || api.authToken().isEmpty())) {
+            toast(tr("正在获取 Auth 令牌…"));
+            bg.execute(new Runnable() {
+                public void run() {
+                    final boolean ok = ensureToken();
+                    ui.post(new Runnable() {
+                        public void run() {
+                            if (!ok) toast(tr("无法获取 Auth 令牌，已使用账号密码方式"));
+                            showLinkDialog();
+                        }
+                    });
+                }
+            });
+            return;
+        }
+        showLinkDialog();
+    }
+
+    private void showLinkDialog() {
         final String url = streamUrl(uuid, prefs.profileFor(uuid));
         dlg()
                 .setTitle(tr("串流链接 · ") + channelName)

@@ -1777,6 +1777,22 @@ public class MainActivity extends Activity {
         addGroupRow(g2, tr("管理播放器"), prefs.players.size() + tr(" 个"), new View.OnClickListener() {
             public void onClick(View v) { showPlayerManager(); }
         });
+        addGroupRow(g2, tr("串流方式"),
+                prefs.streamMode == 1 ? tr("直连（内嵌凭据）")
+                        : (prefs.streamMode == 2 ? tr("本地中转") : tr("自动")),
+                new View.OnClickListener() {
+                    public void onClick(View v) {
+                        dlg().setTitle(tr("串流方式"))
+                                .setItems(new String[]{tr("自动"), tr("直连（内嵌凭据）"), tr("本地中转")},
+                                        new DialogInterface.OnClickListener() {
+                                            public void onClick(DialogInterface d, int which) {
+                                                prefs.streamMode = which;
+                                                prefs.save(MainActivity.this);
+                                                refreshSettingsTab();
+                                            }
+                                        }).show();
+                    }
+                });
         settingsContent.addView(pad(g2));
 
         settingsContent.addView(groupTitle(tr("频道列表")));
@@ -2478,9 +2494,11 @@ public class MainActivity extends Activity {
     private void playUuid(String uuid, String title) {
         String profile = prefs.profileFor(uuid);
         String url;
-        if (api.isDigestAuth()) {
+        // 串流方式：0=自动（Digest 服务器走中继），1=直连，2=强制中继
+        boolean useRelay = prefs.streamMode == 2 || (prefs.streamMode == 0 && api.isDigestAuth());
+        if (useRelay) {
             try {
-                int port = StreamRelay.get().ensure(prefs.base(), prefs.user, prefs.pass);
+                int port = StreamRelay.get().ensure(prefs.base(), prefs.user, prefs.pass, api.authRef());
                 startService(new Intent(this, RelayService.class));
                 url = "http://127.0.0.1:" + port + "/stream/channel/" + uuid
                         + "?profile=" + Uri.encode(profile);

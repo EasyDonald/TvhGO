@@ -5,6 +5,16 @@ All notable changes to TvhGO are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.94]
+
+### Fixed
+- With *Stream authentication* set to **Auth token**, the copied stream link (channel long-press → copy) still contained username/password: the token flag was only applied on the playback paths. The authentication mode is now stored on the API client, so playback, link copying and recording downloads all follow the selected mode.
+- Copying a link in token mode fetches the token first when it is not present yet, instead of silently producing a credential URL.
+- Recording downloads use ?auth=<token> in token mode (no Authorization header needed).
+
+### Changed
+- Setting renamed from *Streaming mode* to **Stream authentication** (账号密码 / Auth 令牌).
+
 ## [1.93]
 
 ### Changed

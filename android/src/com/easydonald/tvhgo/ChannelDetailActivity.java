@@ -448,7 +448,10 @@ public class ChannelDetailActivity extends Activity {
 
     /** Digest 服务器：本地中继转发；Basic 服务器：内嵌凭据的直连地址 */
     private String streamUrl(String channelUuid, String profile) {
-        boolean useRelay = prefs.streamMode == 2 || (prefs.streamMode == 0 && api.isDigestAuth());
+        boolean hasToken = api.playlistUrlsCached() != null
+                && api.playlistUrlsCached().containsKey(channelUuid);
+        boolean useRelay = prefs.streamMode == 2
+                || (prefs.streamMode == 0 && !hasToken && api.isDigestAuth());
         if (!useRelay) return api.streamUrlForUuid(channelUuid, profile);
         try {
             int port = StreamRelay.get().ensure(prefs.base(), prefs.user, prefs.pass, api.authRef());

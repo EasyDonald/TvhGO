@@ -244,6 +244,10 @@ public class I18n {
         add("播放该频道", "播放該頻道", "Play this channel", "このチャンネルを再生");
         add("日志", "日誌", "Logs", "ログ");
         add("搜索", "搜尋", "search", "検索");
+        add("串流方式", "串流方式", "Streaming mode", "ストリーム方式");
+        add("自动", "自動", "Auto", "自動");
+        add("直连（内嵌凭据）", "直連（內嵌憑證）", "Direct (embedded credentials)", "直接（認証情報埋め込み）");
+        add("本地中转", "本機中轉", "Local relay", "ローカル中継");
         add("类型", "類型", "Type", "種類");
         add("创建者", "建立者", "Created by", "作成者");
         add("目录", "目錄", "Directory", "ディレクトリ");

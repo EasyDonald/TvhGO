@@ -41,41 +41,26 @@ public class TvhApi {
     }
 
     /** 服务器是否需要 Digest 认证（需要走本地中继才能播放） */
-    /** /playlist/auth/channels 里解析出的 uuid -> 带 auth 令牌的串流地址 */
-    private volatile java.util.Map<String, String> playlistUrls = null;
-    private volatile long playlistAt = 0;
+    /** 当前账号的串流令牌（来自 /playlist/auth/channels） */
+    private volatile String authToken = null;
+    private volatile boolean useToken = false;
 
-    /** 已缓存的令牌地址（不发起网络请求，可在 UI 线程调用） */
-    public java.util.Map<String, String> playlistUrlsCached() {
-        return playlistUrls;
+    public String authToken() {
+        return authToken;
     }
 
-    /** 拉取并解析播放列表令牌（必须在后台线程调用） */
-    public synchronized java.util.Map<String, String> refreshPlaylist() throws IOException {
+    public void setUseToken(boolean b) {
+        useToken = b;
+    }
+
+    /** 拉取播放列表，只提取其中的 auth 令牌（后台线程调用） */
+    public synchronized String refreshToken() throws IOException {
         String text = requestText("/playlist/auth/channels");
-        java.util.Map<String, String> map = new java.util.LinkedHashMap<String, String>();
-        String currentId = null;
-        for (String raw : text.split("\r?\n")) {
-            String line = raw.trim();
-            if (line.startsWith("#EXTINF")) {
-                int i = line.indexOf("tvg-id=\"");
-                if (i >= 0) {
-                    int j = line.indexOf('"', i + 8);
-                    if (j > i) currentId = line.substring(i + 8, j);
-                }
-            } else if (line.startsWith("http") && line.contains("auth=")) {
-                if (currentId != null && !currentId.isEmpty()) map.put(currentId, line);
-                currentId = null;
-            }
-        }
-        if (map.isEmpty()) throw new IOException("播放列表中没有可用的串流地址");
-        playlistUrls = map;
-        playlistAt = System.currentTimeMillis();
-        return map;
-    }
-
-    public boolean playlistFresh() {
-        return playlistUrls != null && System.currentTimeMillis() - playlistAt < 10 * 60 * 1000L;
+        java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("auth=([A-Za-z0-9._~%-]+)").matcher(text);
+        if (!m.find()) throw new IOException("播放列表中没有 auth 参数");
+        authToken = m.group(1);
+        return authToken;
     }
 
     public HttpAuth authRef() {
@@ -761,11 +746,9 @@ public class TvhApi {
 
     public String streamUrlForUuid(String uuid, String profileName) {
         String prof = (profileName == null || profileName.isEmpty()) ? profile : profileName;
-        // 优先使用播放列表里的 auth 令牌地址：无需内嵌账号密码，外部播放器也能直接播
-        java.util.Map<String, String> map = playlistUrls;
-        if (map != null) {
-            String u = map.get(uuid);
-            if (u != null && !u.isEmpty()) return withProfile(u, prof);
+        if (useToken && authToken != null && !authToken.isEmpty()) {
+            return base + "/stream/channel/" + uuid + "?profile=" + enc(prof)
+                    + "&auth=" + enc(authToken);
         }
         return base.replaceFirst("://", "://" + enc(user) + ":" + enc(pass) + "@") +
                 "/stream/channel/" + uuid + "?profile=" + enc(prof);

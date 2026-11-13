@@ -1778,48 +1778,26 @@ public class MainActivity extends Activity {
             public void onClick(View v) { showPlayerManager(); }
         });
         addGroupRow(g2, tr("串流方式"),
-                prefs.streamMode == 1 ? tr("直连（内嵌凭据）")
-                        : (prefs.streamMode == 2 ? tr("本地中转") : tr("自动")),
+                prefs.streamMode == 1 ? tr("Auth 令牌") : tr("账号密码"),
                 new View.OnClickListener() {
                     public void onClick(View v) {
                         dlg().setTitle(tr("串流方式"))
-                                .setItems(new String[]{tr("自动"), tr("直连（内嵌凭据）"), tr("本地中转")},
+                                .setItems(new String[]{tr("账号密码"), tr("Auth 令牌")},
                                         new DialogInterface.OnClickListener() {
                                             public void onClick(DialogInterface d, int which) {
                                                 prefs.streamMode = which;
                                                 prefs.save(MainActivity.this);
+                                                api.setUseToken(which == 1);
+                                                if (which == 1 && api.authToken() == null) fetchToken();
                                                 refreshSettingsTab();
                                             }
                                         }).show();
                     }
                 });
-        addGroupRow(g2, tr("串流令牌"), !api.playlistFresh() ? tr("未获取")
-                        : (api.playlistUrlsCached() == null ? tr("未获取")
-                        : api.playlistUrlsCached().size() + tr(" 个频道")),
+        addGroupRow(g2, tr("Auth 令牌"),
+                api.authToken() == null ? tr("未获取，点击获取") : api.authToken(),
                 new View.OnClickListener() {
-                    public void onClick(View v) {
-                        toast(tr("正在刷新串流令牌…"));
-                        bg.execute(new Runnable() {
-                            public void run() {
-                                try {
-                                    final int n = api.refreshPlaylist().size();
-                                    ui.post(new Runnable() {
-                                        public void run() {
-                                            toast(tr("已刷新，") + n + tr(" 个频道可用"));
-                                            refreshSettingsTab();
-                                        }
-                                    });
-                                } catch (final Exception e) {
-                                    AppLog.i("TOKEN", "刷新失败：" + e.getMessage());
-                                    ui.post(new Runnable() {
-                                        public void run() {
-                                            toast(tr("刷新失败：") + e.getMessage());
-                                        }
-                                    });
-                                }
-                            }
-                        });
-                    }
+                    public void onClick(View v) { fetchToken(); }
                 });
         settingsContent.addView(pad(g2));
 
@@ -2347,9 +2325,11 @@ public class MainActivity extends Activity {
                     final String info = api.serverInfo();
                     final Map<String, String> tags = api.tags();
                     final List<Channel> chs = api.channels();
-                    try {
-                        if (prefs.streamMode != 1) api.refreshPlaylist();
-                    } catch (Exception ignored) {
+                    if (prefs.streamMode == 1 && api.authToken() == null) {
+                        try {
+                            api.refreshToken();
+                        } catch (Exception ignored) {
+                        }
                     }
                     try {
                         streamProfiles = api.profiles();
@@ -2524,27 +2504,8 @@ public class MainActivity extends Activity {
     }
 
     private void playUuid(String uuid, String title) {
-        String profile = prefs.profileFor(uuid);
-        String url;
-        // 串流方式：0=自动（Digest 服务器走中继），1=直连，2=强制中继
-        boolean hasToken = api.playlistUrlsCached() != null
-                && api.playlistUrlsCached().containsKey(uuid);
-        boolean useRelay = prefs.streamMode == 2
-                || (prefs.streamMode == 0 && !hasToken && api.isDigestAuth());
-        if (useRelay) {
-            try {
-                int port = StreamRelay.get().ensure(prefs.base(), prefs.user, prefs.pass, api.authRef());
-                startService(new Intent(this, RelayService.class));
-                url = "http://127.0.0.1:" + port + "/stream/channel/" + uuid
-                        + "?profile=" + Uri.encode(profile);
-            } catch (Exception e) {
-                AppLog.i("RELAY", "中继启动失败：" + e.getMessage());
-                url = api.streamUrlForUuid(uuid, profile);
-            }
-        } else {
-            url = api.streamUrlForUuid(uuid, profile);
-        }
-        startVlc(url, title);
+        api.setUseToken(prefs.streamMode == 1);
+        startVlc(api.streamUrlForUuid(uuid, prefs.profileFor(uuid)), title);
     }
 
     private void startVlc(String url, String title) {
@@ -2643,6 +2604,29 @@ public class MainActivity extends Activity {
                 })
                 .setNegativeButton(tr("取消"), null)
                 .show();
+    }
+
+    /** 获取当前账号的 Auth 令牌（手动刷新用） */
+    private void fetchToken() {
+        toast(tr("正在获取 Auth 令牌…"));
+        bg.execute(new Runnable() {
+            public void run() {
+                try {
+                    final String t = api.refreshToken();
+                    ui.post(new Runnable() {
+                        public void run() {
+                            toast(tr("已获取令牌"));
+                            refreshSettingsTab();
+                        }
+                    });
+                } catch (final Exception e) {
+                    AppLog.i("TOKEN", "获取失败：" + e.getMessage());
+                    ui.post(new Runnable() {
+                        public void run() { toast(tr("获取失败：") + e.getMessage()); }
+                    });
+                }
+            }
+        });
     }
 
     private void openLogActivity(boolean server) {

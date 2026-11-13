@@ -244,7 +244,7 @@ public class I18n {
         add("播放该频道", "播放該頻道", "Play this channel", "このチャンネルを再生");
         add("日志", "日誌", "Logs", "ログ");
         add("搜索", "搜尋", "search", "検索");
-        add("串流方式", "串流方式", "Streaming mode", "ストリーム方式");
+        add("串流验证方式", "串流驗證方式", "Stream authentication", "ストリーム認証方式");
         add("Auth 令牌", "Auth 令牌", "Auth token", "Auth トークン");
         add("账号密码", "帳號密碼", "Username/password", "ユーザー名とパスワード");
         add("未获取，点击获取", "未取得，點擊取得", "not loaded, tap to fetch", "未取得（タップで取得）");

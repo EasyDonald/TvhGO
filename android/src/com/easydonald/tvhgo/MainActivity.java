@@ -1792,6 +1792,7 @@ public class MainActivity extends Activity {
                                                 prefs.streamMode = which;
                                                 prefs.save(MainActivity.this);
                                                 api = TvhApi.from(prefs);
+                                                toast(which == 1 ? tr("已切换为 Auth 令牌") : tr("已切换为账号密码"));
                                                 if (which == 1 && api.authToken() == null) fetchToken();
                                                 refreshSettingsTab();
                                             }
@@ -2507,8 +2508,29 @@ public class MainActivity extends Activity {
         startActivity(i);
     }
 
-    private void playUuid(String uuid, String title) {
+    private void playUuid(final String uuid, final String title) {
         api.setUseToken(prefs.streamMode == 1);
+        if (prefs.streamMode == 1 && api.authToken() == null) {
+            toast(tr("正在获取 Auth 令牌…"));
+            bg.execute(new Runnable() {
+                public void run() {
+                    try {
+                        api.refreshToken();
+                    } catch (final Exception e) {
+                        AppLog.i("TOKEN", "播放前获取失败：" + e.getMessage());
+                        ui.post(new Runnable() {
+                            public void run() { toast(tr("令牌获取失败，已回退账号密码方式")); }
+                        });
+                    }
+                    ui.post(new Runnable() {
+                        public void run() {
+                            startVlc(api.streamUrlForUuid(uuid, prefs.profileFor(uuid)), title);
+                        }
+                    });
+                }
+            });
+            return;
+        }
         startVlc(api.streamUrlForUuid(uuid, prefs.profileFor(uuid)), title);
     }
 
@@ -2554,6 +2576,7 @@ public class MainActivity extends Activity {
 
     /** 显示 / 复制带账号密码的串流链接 */
     private void showStreamLink(final Channel c) {
+        api.setUseToken(prefs.streamMode == 1);
         if (prefs.streamMode == 1 && api.authToken() == null) {
             toast(tr("正在获取 Auth 令牌…"));
             bg.execute(new Runnable() {
@@ -2564,8 +2587,16 @@ public class MainActivity extends Activity {
                             public void run() { showStreamLink(c); }
                         });
                     } catch (final Exception e) {
+                        AppLog.i("TOKEN", "复制链接前获取失败：" + e.getMessage());
                         ui.post(new Runnable() {
-                            public void run() { toast(tr("获取失败：") + e.getMessage()); }
+                            public void run() {
+                                dlg().setTitle(tr("无法获取 Auth 令牌"))
+                                        .setMessage(tr("该账号无法从服务器读取播放列表：") + "\n"
+                                                + e.getMessage() + "\n\n"
+                                                + tr("可改用「账号密码」方式，或在设置中重试获取令牌。"))
+                                        .setNegativeButton(tr("关闭"), null)
+                                        .show();
+                            }
                         });
                     }
                 }

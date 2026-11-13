@@ -41,6 +41,43 @@ public class TvhApi {
     }
 
     /** 服务器是否需要 Digest 认证（需要走本地中继才能播放） */
+    /** /playlist/auth/channels 里解析出的 uuid -> 带 auth 令牌的串流地址 */
+    private volatile java.util.Map<String, String> playlistUrls = null;
+    private volatile long playlistAt = 0;
+
+    /** 已缓存的令牌地址（不发起网络请求，可在 UI 线程调用） */
+    public java.util.Map<String, String> playlistUrlsCached() {
+        return playlistUrls;
+    }
+
+    /** 拉取并解析播放列表令牌（必须在后台线程调用） */
+    public synchronized java.util.Map<String, String> refreshPlaylist() throws IOException {
+        String text = requestText("/playlist/auth/channels");
+        java.util.Map<String, String> map = new java.util.LinkedHashMap<String, String>();
+        String currentId = null;
+        for (String raw : text.split("\r?\n")) {
+            String line = raw.trim();
+            if (line.startsWith("#EXTINF")) {
+                int i = line.indexOf("tvg-id=\"");
+                if (i >= 0) {
+                    int j = line.indexOf('"', i + 8);
+                    if (j > i) currentId = line.substring(i + 8, j);
+                }
+            } else if (line.startsWith("http") && line.contains("auth=")) {
+                if (currentId != null && !currentId.isEmpty()) map.put(currentId, line);
+                currentId = null;
+            }
+        }
+        if (map.isEmpty()) throw new IOException("播放列表中没有可用的串流地址");
+        playlistUrls = map;
+        playlistAt = System.currentTimeMillis();
+        return map;
+    }
+
+    public boolean playlistFresh() {
+        return playlistUrls != null && System.currentTimeMillis() - playlistAt < 10 * 60 * 1000L;
+    }
+
     public HttpAuth authRef() {
         return auth;
     }
@@ -61,6 +98,27 @@ public class TvhApi {
         while ((line = r.readLine()) != null) sb.append(line).append('\n');
         r.close();
         return sb.toString();
+    }
+
+    /** 取纯文本响应（播放列表等） */
+    private String requestText(String path) throws IOException {
+        HttpURLConnection c = open(path, "GET", null);
+        int code = c.getResponseCode();
+        InputStream in = code >= 400 ? c.getErrorStream() : c.getInputStream();
+        String text = in == null ? "" : readAll(in);
+        c.disconnect();
+        if (code == 401) throw new IOException("认证失败 (HTTP 401)，请检查用户名/密码");
+        if (code == 403) throw new IOException("权限不足 (HTTP 403)：该账号没有被允许读取播放列表");
+        if (code >= 400) throw new IOException("HTTP " + code);
+        return text;
+    }
+
+    /** 把地址里的 profile 参数替换成指定值 */
+    private String withProfile(String url, String prof) {
+        if (url.contains("profile=")) {
+            return url.replaceAll("profile=[^&]*", "profile=" + enc(prof));
+        }
+        return url + (url.contains("?") ? "&" : "?") + "profile=" + enc(prof);
     }
 
     private JSONObject requestJson(String path, String method, String body) throws IOException {
@@ -703,6 +761,12 @@ public class TvhApi {
 
     public String streamUrlForUuid(String uuid, String profileName) {
         String prof = (profileName == null || profileName.isEmpty()) ? profile : profileName;
+        // 优先使用播放列表里的 auth 令牌地址：无需内嵌账号密码，外部播放器也能直接播
+        java.util.Map<String, String> map = playlistUrls;
+        if (map != null) {
+            String u = map.get(uuid);
+            if (u != null && !u.isEmpty()) return withProfile(u, prof);
+        }
         return base.replaceFirst("://", "://" + enc(user) + ":" + enc(pass) + "@") +
                 "/stream/channel/" + uuid + "?profile=" + enc(prof);
     }

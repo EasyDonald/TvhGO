@@ -1339,14 +1339,18 @@ public class MainActivity extends Activity {
     /** 用系统 DownloadManager 把录制文件下到手机「下载」目录（带 Basic 认证头） */
     private void downloadRecording(final DvrEntry d) {
         try {
-            String clean = api.base + "/dvrfile/" + d.uuid;
+            String streamToken = api.authToken();
+            boolean useAuthParam = prefs.streamMode == 1 && streamToken != null && !streamToken.isEmpty();
+            String clean = useAuthParam
+                    ? api.base + "/dvrfile/" + d.uuid + "?auth=" + android.net.Uri.encode(streamToken)
+                    : api.base + "/dvrfile/" + d.uuid;
             android.app.DownloadManager dm =
                     (android.app.DownloadManager) getSystemService(DOWNLOAD_SERVICE);
             android.app.DownloadManager.Request req =
                     new android.app.DownloadManager.Request(android.net.Uri.parse(clean));
             String token = android.util.Base64.encodeToString(
                     (prefs.user + ":" + prefs.pass).getBytes("UTF-8"), android.util.Base64.NO_WRAP);
-            req.addRequestHeader("Authorization", "Basic " + token);
+            if (!useAuthParam) req.addRequestHeader("Authorization", "Basic " + token);
             String base = (d.title == null || d.title.trim().isEmpty()) ? "recording" : d.title.trim();
             base = base.replaceAll("[\\\\/:*?\"<>|]", "_");
             String name = base + "-" + d.uuid.substring(0, 8) + ".ts";
@@ -1777,17 +1781,17 @@ public class MainActivity extends Activity {
         addGroupRow(g2, tr("管理播放器"), prefs.players.size() + tr(" 个"), new View.OnClickListener() {
             public void onClick(View v) { showPlayerManager(); }
         });
-        addGroupRow(g2, tr("串流方式"),
+        addGroupRow(g2, tr("串流验证方式"),
                 prefs.streamMode == 1 ? tr("Auth 令牌") : tr("账号密码"),
                 new View.OnClickListener() {
                     public void onClick(View v) {
-                        dlg().setTitle(tr("串流方式"))
+                        dlg().setTitle(tr("串流验证方式"))
                                 .setItems(new String[]{tr("账号密码"), tr("Auth 令牌")},
                                         new DialogInterface.OnClickListener() {
                                             public void onClick(DialogInterface d, int which) {
                                                 prefs.streamMode = which;
                                                 prefs.save(MainActivity.this);
-                                                api.setUseToken(which == 1);
+                                                api = TvhApi.from(prefs);
                                                 if (which == 1 && api.authToken() == null) fetchToken();
                                                 refreshSettingsTab();
                                             }
@@ -2550,7 +2554,25 @@ public class MainActivity extends Activity {
 
     /** 显示 / 复制带账号密码的串流链接 */
     private void showStreamLink(final Channel c) {
-        final String url = api.streamUrl(c);
+        if (prefs.streamMode == 1 && api.authToken() == null) {
+            toast(tr("正在获取 Auth 令牌…"));
+            bg.execute(new Runnable() {
+                public void run() {
+                    try {
+                        api.refreshToken();
+                        ui.post(new Runnable() {
+                            public void run() { showStreamLink(c); }
+                        });
+                    } catch (final Exception e) {
+                        ui.post(new Runnable() {
+                            public void run() { toast(tr("获取失败：") + e.getMessage()); }
+                        });
+                    }
+                }
+            });
+            return;
+        }
+        final String url = api.streamUrlForUuid(c.uuid, prefs.profileFor(c.uuid));
         dlg()
                 .setTitle(tr("串流链接 · ") + c.name)
                 .setMessage(url)

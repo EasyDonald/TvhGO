@@ -40,6 +40,11 @@ public class TvhApi {
         return new TvhApi(p.base(), p.user, p.pass, p.profile);
     }
 
+    /** 服务器是否需要 Digest 认证（需要走本地中继才能播放） */
+    public boolean isDigestAuth() {
+        return auth.isDigest();
+    }
+
     /** 统一走 HttpAuth：Basic 优先，遇到 Digest 挑战自动切换 */
     private HttpURLConnection open(String path, String method, byte[] body) throws IOException {
         return auth.open(base + path, method, body, 10000, 20000);

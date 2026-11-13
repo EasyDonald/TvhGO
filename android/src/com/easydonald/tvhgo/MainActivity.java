@@ -1793,6 +1793,34 @@ public class MainActivity extends Activity {
                                         }).show();
                     }
                 });
+        addGroupRow(g2, tr("串流令牌"), !api.playlistFresh() ? tr("未获取")
+                        : (api.playlistUrlsCached() == null ? tr("未获取")
+                        : api.playlistUrlsCached().size() + tr(" 个频道")),
+                new View.OnClickListener() {
+                    public void onClick(View v) {
+                        toast(tr("正在刷新串流令牌…"));
+                        bg.execute(new Runnable() {
+                            public void run() {
+                                try {
+                                    final int n = api.refreshPlaylist().size();
+                                    ui.post(new Runnable() {
+                                        public void run() {
+                                            toast(tr("已刷新，") + n + tr(" 个频道可用"));
+                                            refreshSettingsTab();
+                                        }
+                                    });
+                                } catch (final Exception e) {
+                                    AppLog.i("TOKEN", "刷新失败：" + e.getMessage());
+                                    ui.post(new Runnable() {
+                                        public void run() {
+                                            toast(tr("刷新失败：") + e.getMessage());
+                                        }
+                                    });
+                                }
+                            }
+                        });
+                    }
+                });
         settingsContent.addView(pad(g2));
 
         settingsContent.addView(groupTitle(tr("频道列表")));
@@ -2320,6 +2348,10 @@ public class MainActivity extends Activity {
                     final Map<String, String> tags = api.tags();
                     final List<Channel> chs = api.channels();
                     try {
+                        if (prefs.streamMode != 1) api.refreshPlaylist();
+                    } catch (Exception ignored) {
+                    }
+                    try {
                         streamProfiles = api.profiles();
                     } catch (Exception ignored) {
                     }
@@ -2495,7 +2527,10 @@ public class MainActivity extends Activity {
         String profile = prefs.profileFor(uuid);
         String url;
         // 串流方式：0=自动（Digest 服务器走中继），1=直连，2=强制中继
-        boolean useRelay = prefs.streamMode == 2 || (prefs.streamMode == 0 && api.isDigestAuth());
+        boolean hasToken = api.playlistUrlsCached() != null
+                && api.playlistUrlsCached().containsKey(uuid);
+        boolean useRelay = prefs.streamMode == 2
+                || (prefs.streamMode == 0 && !hasToken && api.isDigestAuth());
         if (useRelay) {
             try {
                 int port = StreamRelay.get().ensure(prefs.base(), prefs.user, prefs.pass, api.authRef());

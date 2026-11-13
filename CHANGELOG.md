@@ -5,6 +5,16 @@ All notable changes to TvhGO are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.95]
+
+### Fixed
+- Auth token mode: playback and link copying now obtain the token before building the URL when it has not been loaded yet, instead of silently falling back to embedded credentials.
+- The token, once fetched, enables token mode for the client, so a mode switch made while the app is running no longer leaves the copied link using credentials.
+- When the token cannot be read, the app shows the reason and suggests switching back to username/password instead of producing a credential URL.
+
+### Added
+- The app log records which authentication method produced each stream URL (TOKEN / STREAM lines), and the mode switch is confirmed with a message.
+
 ## [1.94]
 
 ### Fixed

@@ -935,7 +935,9 @@ public class MainActivity extends Activity {
                 if (dvrTab >= 4) {
                     if (pos >= 0 && pos < recShown.size()) autoRecMenu(recShown.get(pos));
                 } else if (pos >= 0 && pos < dvrShown.size()) {
-                    dvrMenu(dvrShown.get(pos));
+                    DvrEntry d = dvrShown.get(pos);
+                    if (!d.finished && isRecording(d)) showRecordingDetail(d);
+                    else dvrMenu(d);
                 }
             }
         });
@@ -1036,6 +1038,124 @@ public class MainActivity extends Activity {
     private boolean isRecording(DvrEntry d) {
         if (d.schedStatus != null && d.schedStatus.toLowerCase().contains("record")) return true;
         return d.state != null && d.state.equalsIgnoreCase("running");
+    }
+
+    /** 录制任务详情：自动刷新已录大小、错误数等 */
+    private void showRecordingDetail(final DvrEntry d) {
+        final TextView body = text(detailText(d), 12, TEXT, false);
+        body.setLineSpacing(dp(3), 1f);
+        body.setPadding(dp(2), dp(4), dp(2), dp(4));
+
+        final boolean live = !d.finished && isRecording(d);
+        final android.os.Handler h = new android.os.Handler(ui.getLooper());
+        final Runnable[] tick = new Runnable[1];
+        tick[0] = new Runnable() {
+            public void run() {
+                if (!body.isAttachedToWindow()) return;
+                if (!live) {
+                    body.setText(detailText(d));
+                    return;
+                }
+                // 录制中：先向服务器取一次最新状态，再刷新文本
+                bg.execute(new Runnable() {
+                    public void run() {
+                        try {
+                            DvrEntry fresh = api.dvrEntry(d.uuid);
+                            if (fresh != null) {
+                                d.filesize = fresh.filesize;
+                                d.errors = fresh.errors;
+                                d.dataErrors = fresh.dataErrors;
+                                d.schedStatus = fresh.schedStatus;
+                                d.status = fresh.status;
+                                d.startReal = fresh.startReal;
+                                d.stopReal = fresh.stopReal;
+                            }
+                        } catch (Exception ignored) {
+                        }
+                        ui.post(new Runnable() {
+                            public void run() {
+                                if (body.isAttachedToWindow()) body.setText(detailText(d));
+                            }
+                        });
+                    }
+                });
+                h.postDelayed(tick[0], 3000);
+            }
+        };
+
+        dlg().setTitle(tr("录制详情"))
+                .setView(body)
+                .setPositiveButton(live ? tr("播放已录部分") : tr("播放"),
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dd, int w) {
+                                if (d.filesize <= 0) {
+                                    toast(live ? tr("当前还没有可播放的内容")
+                                            : tr("该录制没有可用文件"));
+                                    return;
+                                }
+                                startVlc(api.recordingUrl(d.uuid), d.title);
+                            }
+                        })
+                .setNeutralButton(live ? tr("停止录制") : tr("删除"),
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dd, int w) {
+                                if (live) dvrAction(2, d.uuid);
+                                else dvrAction(3, d.uuid);
+                            }
+                        })
+                .setNegativeButton(tr("关闭"), null)
+                .show();
+
+        h.postDelayed(tick[0], 1500);
+    }
+
+    private static long nowSec() {
+        return System.currentTimeMillis() / 1000L;
+    }
+
+    /** 详情文本 */
+    private String detailText(DvrEntry d) {
+        long now = nowSec();
+        long recStart = d.startReal > 0 ? d.startReal : d.start;
+        long elapsed = (d.finished || !isRecording(d))
+                ? Math.max(0, (d.stopReal > 0 ? d.stopReal : d.stop) - recStart)
+                : Math.max(0, now - recStart);
+        StringBuilder sb = new StringBuilder();
+        sb.append(tr("标题")).append("：").append(d.title).append("\n");
+        sb.append(tr("频道")).append("：").append(d.channelName).append("\n");
+        String st = d.schedStatus.isEmpty() ? d.status : d.schedStatus;
+        if (st != null && !st.isEmpty()) sb.append(tr("状态")).append("：").append(st).append("\n");
+        sb.append(tr("时间")).append("：").append(mdhm.format(new Date(d.start * 1000)))
+                .append(" - ").append(mdhm.format(new Date(d.stop * 1000))).append("\n");
+        sb.append(tr("已录时长")).append("：").append(fmtDur(elapsed));
+        if (!d.finished && isRecording(d)) {
+            long remain = Math.max(0, d.stop - now);
+            sb.append("（").append(tr("剩余")).append(" ").append(fmtDur(remain)).append("）");
+        }
+        sb.append("\n");
+        sb.append(tr("文件大小")).append("：").append(d.filesize > 0 ? fmtSize(d.filesize) : "—").append("\n");
+        sb.append(tr("错误")).append("：").append(d.errors);
+        sb.append("   ").append(tr("数据错误")).append("：").append(d.dataErrors).append("\n");
+        if (d.filename != null && !d.filename.isEmpty()) {
+            sb.append(tr("文件")).append("：").append(d.filename).append("\n");
+        }
+        if (d.pri > 0) sb.append(tr("优先级")).append("：").append(d.pri).append("\n");
+        if (d.startExtra > 0 || d.stopExtra > 0) {
+            sb.append(tr("前后延长")).append("：").append(d.startExtra / 60).append(" / ")
+                    .append(d.stopExtra / 60).append(tr(" 分钟")).append("\n");
+        }
+        String creator = d.creator == null ? "" : d.creator.trim();
+        if (creator.isEmpty() && d.owner != null) creator = d.owner.trim();
+        if (!creator.isEmpty()) sb.append(tr("创建者")).append("：").append(creator).append("\n");
+        sb.append(tr("更新时间")).append("：").append(hm.format(new Date(now * 1000)));
+        return sb.toString();
+    }
+
+    private String fmtDur(long sec) {
+        long total = Math.max(0, sec);
+        long hh = total / 3600, mm = (total % 3600) / 60, ss = total % 60;
+        if (hh > 0) return String.format("%d:%02d:%02d", hh, mm, ss);
+        return String.format("%d:%02d", mm, ss);
     }
 
     private void dvrMenu(final DvrEntry d) {
@@ -3066,6 +3186,10 @@ public class MainActivity extends Activity {
             } else {
                 String st = d.schedStatus.isEmpty() ? d.status : d.schedStatus;
                 if (st != null && !st.isEmpty()) meta.append("  ·  ").append(st);
+                if (isRecording(d)) {
+                    if (d.filesize > 0) meta.append("  ·  ").append(tr("已录")).append(" ").append(fmtSize(d.filesize));
+                    if (d.errors > 0) meta.append("  ·  ").append(tr("错误")).append(" ").append(d.errors);
+                }
                 if (d.autorec != null && !d.autorec.isEmpty()) meta.append("  ·  ").append(tr("自动录制"));
             }
             String creator = d.creator == null ? "" : d.creator.trim();

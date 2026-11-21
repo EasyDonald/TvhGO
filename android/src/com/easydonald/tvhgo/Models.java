@@ -55,6 +55,9 @@ class DvrEntry {
     String filename = "";
     long filesize;
     int errors;
+    int dataErrors;
+    long startReal;
+    long stopReal;
     int playcount;
     boolean finished;
     String autorec = "";

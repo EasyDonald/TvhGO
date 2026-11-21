@@ -265,6 +265,10 @@ public class I18n {
         add("直连（内嵌凭据）", "直連（內嵌憑證）", "Direct (embedded credentials)", "直接（認証情報埋め込み）");
         add("本地中转", "本機中轉", "Local relay", "ローカル中継");
         add("类型", "類型", "Type", "種類");
+        add("从当前开始录制", "從目前開始錄影", "Record from now", "現在から録画");
+        add("节目已结束", "節目已結束", "Programme has ended", "番組は終了しました");
+        add("节目已结束，无法录制", "節目已結束，無法錄影", "The programme has ended and cannot be recorded", "番組は終了しているため録画できません");
+        add("已开始录制：", "已開始錄影：", "Recording started: ", "録画を開始しました: ");
         add("创建者", "建立者", "Created by", "作成者");
         add("目录", "目錄", "Directory", "ディレクトリ");
         add("优先级", "優先級", "Priority", "優先度");

@@ -626,6 +626,32 @@ public class TvhApi {
         postForm("/api/dvr/entry/create_by_event", body);
     }
 
+    /**
+     * 预约录制某个节目：
+     * - 尚未开始：按节目时间创建（create_by_event，保留节目关联）；
+     * - 正在播出：从当前时刻录到节目结束（create，start=now），与网页版行为一致；
+     * - 已经结束：抛错，不再创建。
+     */
+    public void recordEventSmart(EpgEvent e, String configUuid, int pri) throws IOException {
+        long now = System.currentTimeMillis() / 1000L;
+        if (e.stop > 0 && e.stop <= now) {
+            throw new IOException("节目已结束，无法录制");
+        }
+        if (e.start > now && e.eventId > 0) {
+            recordEvent(e.eventId, configUuid);
+            return;
+        }
+        long start = Math.max(e.start, now);
+        long stop = e.stop > start ? e.stop : start + 60;
+        createRecording(start, stop, e.channelUuid, e.channelName, e.title, pri, 0, 0, configUuid);
+    }
+
+    /** 是否正在播出 */
+    public static boolean isLive(EpgEvent e) {
+        long now = System.currentTimeMillis() / 1000L;
+        return e.start <= now && e.stop > now;
+    }
+
     /** 取消待录制 / 停止正在录制 */
     public void dvrCancel(String uuid) throws IOException {
         postForm("/api/dvr/entry/cancel", "uuid=" + URLEncoder.encode(uuid, "UTF-8"));
@@ -680,7 +706,9 @@ public class TvhApi {
             conf.put("stop", stop);
             conf.put("channel", channelUuid);
             conf.put("channelname", channelName == null ? "" : channelName);
-            conf.put("config_name", configUuid);
+            if (configUuid != null && !configUuid.trim().isEmpty()) {
+                conf.put("config_name", configUuid);
+            }
             conf.put("pri", pri);
             conf.put("start_extra", Math.max(0, startExtraMin) * 60);
             conf.put("stop_extra", Math.max(0, stopExtraMin) * 60);

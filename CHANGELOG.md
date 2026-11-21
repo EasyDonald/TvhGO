@@ -5,6 +5,16 @@ All notable changes to TvhGO are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.97]
+
+### Fixed
+- Recording a programme that is already on air failed: the app only used /api/dvr/entry/create_by_event, which passes the original (past) start time. For a running programme the entry is now created explicitly with start = now and stop = end of programme, matching the web interface, which records from the current moment to the end of the programme.
+- Programmes that have already ended are shown as such and are not offered for recording.
+- A missing DVR configuration no longer aborts the action; the entry is created without config_name and the server applies its default configuration.
+
+### Changed
+- The EPG menu label reflects the state: “Record this programme” for upcoming ones and “Record from now” for running ones.
+
 ## [1.96]
 
 ### Fixed

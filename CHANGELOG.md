@@ -5,6 +5,12 @@ All notable changes to TvhGO are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.98]
+
+### Added
+- Recording details: tapping a recording that is in progress opens a details sheet with the programme, channel, state, scheduled and real times, elapsed and remaining time, current file size, error and data-error counters, output file, priority, padding and creator. The values are refreshed from the server every three seconds while the sheet is open.
+- The same sheet can play the part recorded so far (/dvrfile/<uuid>), stop the recording, or delete a finished entry. The list row now also shows the current size and error count for running recordings.
+
 ## [1.97]
 
 ### Fixed

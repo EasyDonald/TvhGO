@@ -524,13 +524,18 @@ public class ChannelDetailActivity extends Activity {
     }
 
     private void eventMenu(final EpgEvent e) {
-        String[] items = {isBooked(e) ? tr("已预约录制") : tr("录制此节目"), tr("播放该频道"), tr("查看详情")};
+        boolean live = TvhApi.isLive(e);
+        boolean ended = e.stop > 0 && e.stop <= System.currentTimeMillis() / 1000L;
+        String recordLabel = isBooked(e) ? tr("已预约录制")
+                : (ended ? tr("节目已结束") : (live ? tr("从当前开始录制") : tr("录制此节目")));
+        String[] items = {recordLabel, tr("播放该频道"), tr("查看详情")};
         dlg()
                 .setTitle(fmtRange(e) + "\n" + e.title)
                 .setItems(items, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface d, int which) {
                         if (which == 0) {
                             if (isBooked(e)) toast(tr("该节目已预约录制"));
+                            else if (ended) toast(tr("节目已结束，无法录制"));
                             else record(e);
                         } else if (which == 1) {
                             play();
@@ -559,12 +564,12 @@ public class ChannelDetailActivity extends Activity {
             public void run() {
                 try {
                     String cfg = api.dvrConfigUuid();
-                    if (cfg.isEmpty()) throw new Exception(tr("服务器上没有可用的录制配置"));
-                    api.recordEvent(e.eventId, cfg);
+                    api.recordEventSmart(e, cfg, 6);
                     ui.post(new Runnable() {
                         public void run() {
                             progress.setVisibility(View.GONE);
-                            toast(tr("已预约录制：") + e.title);
+                            toast(TvhApi.isLive(e) ? tr("已开始录制：") + e.title
+                                    : tr("已预约录制：") + e.title);
                             booked.add(e.start + "|" + e.title);
                             adapter.notifyDataSetChanged();
                         }

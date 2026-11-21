@@ -782,13 +782,20 @@ public class MainActivity extends Activity {
     }
 
     private void epgEventMenu(final EpgEvent e) {
-        String[] items = {tr("播放该频道"), tr("录制此节目"), tr("查看详情")};
+        boolean live = TvhApi.isLive(e);
+        boolean ended = e.stop > 0 && e.stop <= System.currentTimeMillis() / 1000L;
+        String[] items = {tr("播放该频道"),
+                ended ? tr("节目已结束") : (live ? tr("从当前开始录制") : tr("录制此节目")),
+                tr("查看详情")};
         dlg()
                 .setTitle((e.channelNumber.isEmpty() ? "" : e.channelNumber + " ") + e.channelName + "\n" + e.title)
                 .setItems(items, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface d, int which) {
                         if (which == 0) playUuid(e.channelUuid, e.channelName);
-                        else if (which == 1) recordEvent(e);
+                        else if (which == 1) {
+                            if (ended) toast(tr("节目已结束，无法录制"));
+                            else recordEvent(e);
+                        }
                         else showEventDetail(e);
                     }
                 }).show();
@@ -809,12 +816,11 @@ public class MainActivity extends Activity {
             public void run() {
                 try {
                     String cfg = api.dvrConfigUuid();
-                    if (cfg.isEmpty()) throw new Exception(tr("服务器上没有可用的录制配置"));
-                    api.recordEvent(e.eventId, cfg);
+                    api.recordEventSmart(e, cfg, 6);
                     ui.post(new Runnable() {
                         public void run() {
                             progress.setVisibility(View.GONE);
-                            toast(tr("已加入录制：") + e.title);
+                            toast(tr("已开始录制：") + e.title);
                             dvrLoaded = false;
                         }
                     });

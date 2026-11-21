@@ -459,6 +459,61 @@ public class TvhApi {
         }
     }
 
+    /** 取单条录制任务（用于录制详情页刷新） */
+    public DvrEntry dvrEntry(String uuid) throws IOException {
+        JSONObject page = requestJson("/api/dvr/entry/grid_upcoming?uuid=" + enc(uuid), "GET", null);
+        if (page.optInt("totalCount", 0) <= 0) {
+            // 可能已经结束并转入历史列表
+            for (String p : new String[]{"/api/dvr/entry/grid_finished", "/api/dvr/entry/grid_failed"}) {
+                JSONObject o = requestJson(p + "?uuid=" + enc(uuid), "GET", null);
+                if (o.optInt("totalCount", 0) > 0) {
+                    List<DvrEntry> l = dvrParse(o);
+                    if (!l.isEmpty()) return l.get(0);
+                }
+            }
+            return null;
+        }
+        List<DvrEntry> l = dvrParse(page);
+        return l.isEmpty() ? null : l.get(0);
+    }
+
+    private List<DvrEntry> dvrParse(JSONObject page) {
+        List<DvrEntry> out = new ArrayList<DvrEntry>();
+        org.json.JSONArray arr = page.optJSONArray("entries");
+        if (arr == null) return out;
+        for (int i = 0; i < arr.length(); i++) {
+            try {
+                JSONObject o = arr.getJSONObject(i);
+                DvrEntry d = new DvrEntry();
+                d.uuid = o.optString("uuid");
+                d.start = o.optLong("start");
+                d.stop = o.optLong("stop");
+                d.channelName = o.optString("channelname");
+                d.title = o.optString("disp_title", o.optString("title"));
+                d.subtitle = o.optString("disp_subtitle");
+                d.description = o.optString("disp_description");
+                d.status = o.optString("status");
+                d.schedStatus = o.optString("sched_status");
+                d.filename = o.optString("filename");
+                d.filesize = o.optLong("filesize", 0);
+                d.errors = o.optInt("errors", 0);
+                d.dataErrors = o.optInt("data_errors", 0);
+                d.startReal = o.optLong("start_real", 0);
+                d.stopReal = o.optLong("stop_real", 0);
+                d.pri = o.optInt("pri", 0);
+                d.startExtra = o.optInt("start_extra", 0);
+                d.stopExtra = o.optInt("stop_extra", 0);
+                d.enabled = o.optBoolean("enabled", true);
+                d.state = o.optString("state", "");
+                d.owner = o.optString("owner", "");
+                d.creator = o.optString("creator", "");
+                out.add(d);
+            } catch (org.json.JSONException ignored) {
+            }
+        }
+        return out;
+    }
+
     private List<DvrEntry> dvrGrid(String path) throws IOException {
         List<DvrEntry> out = new ArrayList<DvrEntry>();
         final int pageSize = 400;
@@ -490,6 +545,9 @@ public class TvhApi {
                 d.filename = o.optString("filename");
                 d.filesize = o.optLong("filesize", 0);
                 d.errors = o.optInt("errors", 0);
+                d.dataErrors = o.optInt("data_errors", 0);
+                d.startReal = o.optLong("start_real", 0);
+                d.stopReal = o.optLong("stop_real", 0);
                 d.playcount = o.optInt("playcount", 0);
                 d.autorec = o.optString("autorec_caption", "");
                 d.pri = o.optInt("pri", 0);
